@@ -31,29 +31,35 @@ pub mod grou {
     use itertools::EitherOrBoth;
     use itertools::Itertools;
 
-    impl std::ops::Add for Grou {
-        type Output = Grou;
+    macro_rules! iter_zip_addition {
+        ($lhs:expr, $rhs:expr, $result:expr ) => {
 
-        // Todo, bench this vs other implementation.
-        fn add(self, other: Grou) -> Grou {
-            let mut result = Grou::empty();
             let mut carry = false;
 
-            for val in self.data.iter().zip_longest(other.data.iter()){
+            for val in $lhs.data.iter().zip_longest($rhs.data.iter()){
                 let (value, tmp_carry) = match val {
                     EitherOrBoth::Both(i, j) => i.carrying_add(*j, carry),
                     EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
                 };
 
                 carry = tmp_carry;
-                result.data.push(value);
+                $result.push(value);
             }
 
             // Final carry.
             if carry {
-                result.data.push(1);
+                $result.push(1);
             }
+        };
+    }
 
+    impl std::ops::Add for Grou {
+        type Output = Grou;
+
+        // Todo, bench this vs other implementation.
+        fn add(self, other: Grou) -> Grou {
+            let mut result = Grou::empty();
+            iter_zip_addition!(self, other, result.data);
             return result;
         }
     }
@@ -61,18 +67,7 @@ pub mod grou {
     impl std::ops::AddAssign for Grou {
         fn add_assign(self: &mut Grou, other: Grou) {
             let mut final_vec = Vec::<u32>::new();
-            let mut carry = false;
-            for val in self.data.iter().zip_longest(other.data.iter()){
-                let (value, tmp_carry) = match val {
-                    EitherOrBoth::Both(i, j) => i.carrying_add(*j, carry),
-                    EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
-                };
-                final_vec.push(value);
-                carry = tmp_carry;
-            }
-            if carry {
-                final_vec.push(1);
-            }
+            iter_zip_addition!(self, other, final_vec);
             self.data = final_vec;
         }
     }
