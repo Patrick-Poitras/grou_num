@@ -1,8 +1,12 @@
 [package]
-name = "grou_num"
-version = "0.1.0"
+name = "grou-num"
+version = "0.0.0"
 edition = "2021"
-
+description = "A highly experimental (i.e. unstable) big integer package"
+repository = "https://github.com/Patrick-Poitras/grou_num"
+license = "MIT OR Apache-2.0"
+authors = ["Patrick Poitras <patrick.f.poitras@gmail.com>"]
+readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

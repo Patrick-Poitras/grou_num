@@ -8,7 +8,7 @@ pub mod grou {
 
     impl Grou {
         pub fn empty() -> Grou {
-            Grou {data: vec![]}
+            Grou { data: vec![] }
         }
     }
 
@@ -22,9 +22,7 @@ pub mod grou {
 
     impl From<Vec<u32>> for Grou {
         fn from(num: Vec<u32>) -> Grou {
-            Grou {
-                data: num,
-            }
+            Grou { data: num }
         }
     }
 
@@ -33,12 +31,14 @@ pub mod grou {
 
     macro_rules! iter_zip_addition {
         ($lhs:expr, $rhs:expr, $result:expr ) => {
-
             let mut carry = false;
 
-            for val in $lhs.data.iter().zip_longest($rhs.data.iter()){
+            // Iterate over a zip of the lhs and rhs.
+            for val in $lhs.data.iter().zip_longest($rhs.data.iter()) {
+                // When either side's iterator is None, because it reached the end, the carrying_add 
+                // method will be called with 0 in the place of the other.
                 let (value, tmp_carry) = match val {
-                    EitherOrBoth::Both(i, j) => i.carrying_add(*j, carry),
+                    EitherOrBoth::Both(i, j)                       => i.carrying_add(*j, carry),
                     EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
                 };
 
@@ -56,7 +56,6 @@ pub mod grou {
     impl std::ops::Add for Grou {
         type Output = Grou;
 
-        // Todo, bench this vs other implementation.
         fn add(self, other: Grou) -> Grou {
             let mut result = Grou::empty();
             iter_zip_addition!(self, other, result.data);
@@ -71,7 +70,6 @@ pub mod grou {
             self.data = final_vec;
         }
     }
-
 }
 
 #[cfg(test)]
@@ -95,18 +93,16 @@ mod tests {
 
     #[test]
     fn test_uneven_lengths() {
-        let u = Grou::from(vec![1,2,3,4,5]);
+        let u = Grou::from(vec![1, 2, 3, 4, 5]);
         let v = Grou::from(vec![1]);
 
-        assert_eq!(Grou::from(vec![2,2,3,4,5]), u + v);
+        assert_eq!(Grou::from(vec![2, 2, 3, 4, 5]), u + v);
 
-        let u = Grou::from(vec![1,2,3,4,5]);
+        let u = Grou::from(vec![1, 2, 3, 4, 5]);
         let v = Grou::from(vec![]);
 
-        assert_eq!(Grou::from(vec![1,2,3,4,5]), u + v);
+        assert_eq!(Grou::from(vec![1, 2, 3, 4, 5]), u + v);
 
         assert_eq!(Grou::from(vec![]), Grou::from(vec![]) + Grou::from(vec![]));
     }
-
-
 }
