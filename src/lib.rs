@@ -7,8 +7,9 @@ pub mod grou {
     }
 
     impl Grou {
-        pub fn empty() -> Grou {
-            Grou { data: vec![] }
+        // Empty array. Preallocated to size.
+        pub fn empty(size: usize) -> Grou {
+            Grou { data: Vec::with_capacity(size) }
         }
     }
 
@@ -57,7 +58,8 @@ pub mod grou {
         type Output = Grou;
 
         fn add(self, other: Grou) -> Grou {
-            let mut result = Grou::empty();
+            let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+            let mut result = Grou::empty(preallocation_size);
             iter_zip_addition!(self, other, result.data);
             return result;
         }
@@ -65,7 +67,8 @@ pub mod grou {
 
     impl std::ops::AddAssign for Grou {
         fn add_assign(self: &mut Grou, other: Grou) {
-            let mut final_vec = Vec::<u32>::new();
+            let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+            let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
             iter_zip_addition!(self, other, final_vec);
             self.data = final_vec;
         }
