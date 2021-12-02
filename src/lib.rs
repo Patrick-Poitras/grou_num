@@ -1,0 +1,117 @@
+#![feature(bigint_helper_methods)]
+
+pub mod grou {
+    #[derive(Clone, PartialEq, Eq, Debug)]
+    pub struct Grou {
+        data: Vec<u32>,
+    }
+
+    impl Grou {
+        pub fn empty() -> Grou {
+            Grou {data: vec![]}
+        }
+    }
+
+    impl From<u32> for Grou {
+        fn from(small_num: u32) -> Grou {
+            Grou {
+                data: vec![small_num],
+            }
+        }
+    }
+
+    impl From<Vec<u32>> for Grou {
+        fn from(num: Vec<u32>) -> Grou {
+            Grou {
+                data: num,
+            }
+        }
+    }
+
+    use itertools::EitherOrBoth;
+    use itertools::Itertools;
+
+    impl std::ops::Add for Grou {
+        type Output = Grou;
+
+        // Todo, bench this vs other implementation.
+        fn add(self, other: Grou) -> Grou {
+            let mut result = Grou::empty();
+            let mut carry = false;
+
+            for val in self.data.iter().zip_longest(other.data.iter()){
+                let (value, tmp_carry) = match val {
+                    EitherOrBoth::Both(i, j) => i.carrying_add(*j, carry),
+                    EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
+                };
+
+                carry = tmp_carry;
+                result.data.push(value);
+            }
+
+            // Final carry.
+            if carry {
+                result.data.push(1);
+            }
+
+            return result;
+        }
+    }
+
+    impl std::ops::AddAssign for Grou {
+        fn add_assign(self: &mut Grou, other: Grou) {
+            let mut final_vec = Vec::<u32>::new();
+            let mut carry = false;
+            for val in self.data.iter().zip_longest(other.data.iter()){
+                let (value, tmp_carry) = match val {
+                    EitherOrBoth::Both(i, j) => i.carrying_add(*j, carry),
+                    EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
+                };
+                final_vec.push(value);
+                carry = tmp_carry;
+            }
+            if carry {
+                final_vec.push(1);
+            }
+            self.data = final_vec;
+        }
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::grou::Grou;
+
+    #[test]
+    fn test_small_addition() {
+        let u = Grou::from(100);
+        let v = Grou::from(u32::MAX);
+
+        let w = u.clone() + v.clone();
+        assert_eq!(w, Grou::from(vec![99, 1]));
+        let w3 = w.clone() + w.clone() + w;
+        assert_eq!(w3, Grou::from(vec![297, 3]));
+
+        let mut x = Grou::from(u32::MAX);
+        x += u.clone();
+        assert_eq!(v + u, x);
+    }
+
+    #[test]
+    fn test_uneven_lengths() {
+        let u = Grou::from(vec![1,2,3,4,5]);
+        let v = Grou::from(vec![1]);
+
+        assert_eq!(Grou::from(vec![2,2,3,4,5]), u + v);
+
+        let u = Grou::from(vec![1,2,3,4,5]);
+        let v = Grou::from(vec![]);
+
+        assert_eq!(Grou::from(vec![1,2,3,4,5]), u + v);
+
+        assert_eq!(Grou::from(vec![]), Grou::from(vec![]) + Grou::from(vec![]));
+    }
+
+
+}
