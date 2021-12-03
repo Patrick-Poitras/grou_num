@@ -11,3 +11,11 @@ readme = "README.md"
 
 [dependencies]
 itertools = "0.10"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "bench_grou"
+harness = false
+html_reports = true
