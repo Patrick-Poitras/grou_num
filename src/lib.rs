@@ -27,8 +27,81 @@ pub mod grou {
         }
     }
 
+    use unchecked_unwrap::UncheckedUnwrap;
+    macro_rules! iter_addition_unchecked {
+        ($lhs:expr, $rhs:expr, $result:expr ) => {
+            let mut carry = false;
+            let mut a;
+            let mut b;
+
+            if ($lhs.data.len() > $rhs.data.len()) {
+                a = $lhs.data.iter();
+                b = $rhs.data.iter();
+            } else {
+                b = $lhs.data.iter();
+                a = $rhs.data.iter();
+            }
+
+            // Do until b is exhausted.
+            for _i in 0..std::cmp::min($lhs.data.len(),$rhs.data.len()) {
+                unsafe {
+                    let (value, tmp_carry) = a.next().unchecked_unwrap().carrying_add(*b.next().unchecked_unwrap(), carry);
+                    carry = tmp_carry;
+                    $result.push(value);
+                }
+            }
+            // Do until a is also exhausted.
+            for _i in std::cmp::min($lhs.data.len(), $rhs.data.len())..std::cmp::max($lhs.data.len(), $rhs.data.len()) {
+                unsafe {
+                    let (value, tmp_carry) = a.next().unchecked_unwrap().carrying_add(0u32, carry);
+                    carry = tmp_carry;
+                    $result.push(value); 
+                }
+
+            }
+
+            // Final carry.
+            if carry {
+                $result.push(1);
+            }
+        };
+    }
+
+    /*
     use itertools::EitherOrBoth;
     use itertools::Itertools;
+
+    macro_rules! iter_addition {
+        ($lhs:expr, $rhs:expr, $result:expr ) => {
+            let mut carry = false;
+
+            // Iterate over a zip of the lhs and rhs.
+            let maxlen = std::cmp::max($lhs.data.len(), $rhs.data.len());
+            for index in 0..maxlen {
+                //let a :u32 = *$lhs.data.get(index).unwrap_or(&0);
+                //let b :u32 = *$rhs.data.get(index).unwrap_or(&0);
+
+                let a = match $lhs.data.get(index) {
+                    Some(v) => *v,
+                    None => 0u32,
+                };
+                let b = match $rhs.data.get(index) {
+                    Some(v) => *v,
+                    None => 0u32,
+                };
+
+                let (value, tmp_carry) = a.carrying_add(b, carry);
+
+                carry = tmp_carry;
+                $result.push(value);
+            }
+
+            // Final carry.
+            if carry {
+                $result.push(1);
+            }
+        };
+    }
 
     macro_rules! iter_zip_addition {
         ($lhs:expr, $rhs:expr, $result:expr ) => {
@@ -54,6 +127,8 @@ pub mod grou {
         };
     }
 
+    */
+
     macro_rules! addition_impl_grou {
         ($type1:ty, $type2:ty) => {
              impl std::ops::Add<$type2> for $type1 {
@@ -62,7 +137,7 @@ pub mod grou {
                 fn add(self: Self, other: $type2) -> Grou {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
                     let mut result = Grou::empty(preallocation_size);
-                    iter_zip_addition!(self, other, result.data);
+                    iter_addition_unchecked!(self, other, result.data);
                     return result;
                 }
             }  
@@ -74,21 +149,21 @@ pub mod grou {
     addition_impl_grou!(Grou, &Grou);
     addition_impl_grou!(&Grou, &Grou);
 
-    macro_rules! add_assign_impl {
+    macro_rules! add_assign_impl_grou {
         ($type2:ty) => {
             impl std::ops::AddAssign<$type2> for Grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
                     let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
-                    iter_zip_addition!(self, other, final_vec);
+                    iter_addition_unchecked!(self, other, final_vec);
                     self.data = final_vec;
                 }
             }
         };
     }
 
-    add_assign_impl!(Grou);
-    add_assign_impl!(&Grou);
+    add_assign_impl_grou!(Grou);
+    add_assign_impl_grou!(&Grou);
 }
 
 #[cfg(test)]
@@ -140,5 +215,12 @@ mod tests {
         assert_eq!(Grou::from(vec![1, 2, 3, 4, 5]), u + v);
 
         assert_eq!(Grou::from(vec![]), Grou::from(vec![]) + Grou::from(vec![]));
+    }
+
+    #[test]
+    fn test_overflow() {
+        let mut g = Grou::from(u32::MAX);
+        g += Grou::from(1);
+        assert_eq!(Grou::from(vec![0,1]), g);
     }
 }

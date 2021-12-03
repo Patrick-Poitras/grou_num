@@ -183,6 +183,7 @@ version = "0.0.0"
 dependencies = [
  "criterion",
  "itertools",
+ "unchecked_unwrap",
 ]
 
 [[package]]
@@ -480,6 +481,12 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "unchecked_unwrap"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c24f3a206e040c2d1f2bc5987864f777cb807ad4f50bed46dbfa2af917be2d8"
 
 [[package]]
 name = "unicode-width"

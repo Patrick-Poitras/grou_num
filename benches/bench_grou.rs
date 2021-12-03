@@ -22,7 +22,7 @@ fn grou_add_assign(c: &mut Criterion) {
     let mut x = black_box(Grou::from(0));
     let y = Grou::from(vec![1,1,1,2,2,2]);
     c.bench_function("add-assign-x1000", |b| (b.iter(|| {
-        for i in 0..1000 {
+        for _ in 0..1000 {
             x += &y;
         }
     })));
