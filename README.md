@@ -12,4 +12,4 @@ Currently the focus is primarily on the `Grou` type, which is an unsigned intege
 
 # Immediate priorities:
 * Extend the addition overloads.
-* Benchmark the addition
+* Convert to decimal string.

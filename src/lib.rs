@@ -54,25 +54,41 @@ pub mod grou {
         };
     }
 
-    impl std::ops::Add for Grou {
-        type Output = Grou;
+    macro_rules! addition_impl_grou {
+        ($type1:ty, $type2:ty) => {
+             impl std::ops::Add<$type2> for $type1 {
+                type Output = Grou;
 
-        fn add(self, other: Grou) -> Grou {
-            let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
-            let mut result = Grou::empty(preallocation_size);
-            iter_zip_addition!(self, other, result.data);
-            return result;
-        }
+                fn add(self: Self, other: $type2) -> Grou {
+                    let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+                    let mut result = Grou::empty(preallocation_size);
+                    iter_zip_addition!(self, other, result.data);
+                    return result;
+                }
+            }  
+        };
     }
 
-    impl std::ops::AddAssign for Grou {
-        fn add_assign(self: &mut Grou, other: Grou) {
-            let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
-            let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
-            iter_zip_addition!(self, other, final_vec);
-            self.data = final_vec;
-        }
+    addition_impl_grou!(Grou,  Grou);
+    addition_impl_grou!(&Grou, Grou);
+    addition_impl_grou!(Grou, &Grou);
+    addition_impl_grou!(&Grou, &Grou);
+
+    macro_rules! add_assign_impl {
+        ($type2:ty) => {
+            impl std::ops::AddAssign<&type2> for Grou {
+                fn add_assign(self: &mut Grou, other: $type2) {
+                    let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+                    let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
+                    iter_zip_addition!(self, other, final_vec);
+                    self.data = final_vec;
+                }
+            }
+        };
     }
+
+    add_assign_impl!(Grou);
+    add_assign_impl!(&Grou);
 }
 
 #[cfg(test)]
