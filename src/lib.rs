@@ -111,6 +111,23 @@ mod tests {
     }
 
     #[test]
+    fn test_operators_addition() {
+        let u = Grou::from(100);
+        let v = Grou::from(250);
+
+        assert_eq!(u.clone() + v.clone(), Grou::from(350));
+        assert_eq!(u.clone() + &v, Grou::from(350));
+        assert_eq!(&u + v.clone(), Grou::from(350));
+        assert_eq!(&u + &v, Grou::from(350));
+
+        let mut u = Grou::from(100);
+        u += v.clone();
+        assert_eq!(u, Grou::from(350));
+        u += &v;
+        assert_eq!(u, Grou::from(600));
+    }
+
+    #[test]
     fn test_uneven_lengths() {
         let u = Grou::from(vec![1, 2, 3, 4, 5]);
         let v = Grou::from(vec![1]);
