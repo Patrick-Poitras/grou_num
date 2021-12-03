@@ -76,7 +76,7 @@ pub mod grou {
 
     macro_rules! add_assign_impl {
         ($type2:ty) => {
-            impl std::ops::AddAssign<&type2> for Grou {
+            impl std::ops::AddAssign<$type2> for Grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
                     let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
