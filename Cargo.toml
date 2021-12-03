@@ -10,7 +10,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-itertools = "0.10"
+#itertools = "0.10"
 unchecked_unwrap = "3.0.0"
 
 [dev-dependencies]
