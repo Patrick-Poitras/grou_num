@@ -11,5 +11,8 @@ Otherwise, this is intended to use the currently feature-gated 'bigint_helper_me
 Currently the focus is primarily on the `Grou` type, which is an unsigned integer.
 
 # Immediate priorities:
-* Extend the addition overloads.
 * Convert to decimal string.
+* ShiftLeft / ShiftRight
+* Subtraction
+* Implement Add<u32> for Grou.
+* Multiplication
