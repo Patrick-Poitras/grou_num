@@ -56,11 +56,19 @@ fn grou_fibonacci_1000(c: &mut Criterion) {
         b.iter(|| grou_fibonacci(1000));
     });
 }
+
+fn grou_fibonacci_5000(c: &mut Criterion) {
+    c.bench_function("fibonacci-5000", |b| {
+        b.iter(|| grou_fibonacci(5000));
+    });
+}
+
 criterion_group!(grou_addition, 
     grou_create_clone,
     grou_add,
     grou_add_assign,
     grou_verylarge_addition,
-    grou_fibonacci_1000);
+    grou_fibonacci_1000,
+    grou_fibonacci_5000);
 
 criterion_main!(grou_addition);

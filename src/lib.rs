@@ -27,38 +27,44 @@ pub mod grou {
         }
     }
 
-    use unchecked_unwrap::UncheckedUnwrap;
-    macro_rules! iter_addition_unchecked {
+    // Shoutout for a tip from Globi on Discord that opened the way for this.
+    macro_rules! iter_zip_twice {
         ($lhs:expr, $rhs:expr, $result:expr ) => {
             let mut carry = false;
-            let mut a;
-            let mut b;
+
+            // Create iterators
+            let mut largest;
+            let mut smallest;
 
             if ($lhs.data.len() > $rhs.data.len()) {
-                a = $lhs.data.iter();
-                b = $rhs.data.iter();
+                largest = $lhs.data.iter();
+                smallest = $rhs.data.iter();
             } else {
-                b = $lhs.data.iter();
-                a = $rhs.data.iter();
+                smallest = $lhs.data.iter();
+                largest = $rhs.data.iter();
             }
 
+            let smallest_size = std::cmp::min($lhs.data.len(),$rhs.data.len());
+            let largest_size = std::cmp::max($lhs.data.len(),$rhs.data.len());
+
             // Do until b is exhausted.
-            for _i in 0..std::cmp::min($lhs.data.len(),$rhs.data.len()) {
-                unsafe {
-                    let (value, tmp_carry) = a.next().unchecked_unwrap().carrying_add(*b.next().unchecked_unwrap(), carry);
+            for (small, large) in smallest.zip(largest.by_ref()) {
+                    let (value, tmp_carry) = small.carrying_add(*large, carry);
                     carry = tmp_carry;
+                    $result.push(value);
+            }
+            // Do until a is also exhausted.
+            for large in largest {
+                if (carry) {
+                    let (value, tmp_carry) = large.carrying_add(0u32, carry);
+                    carry = tmp_carry;
+                    $result.push(value); 
+                } else { // if no carry bit, then u32 + 0 can't overflow.
+                    let value = *large;
                     $result.push(value);
                 }
             }
-            // Do until a is also exhausted.
-            for _i in std::cmp::min($lhs.data.len(), $rhs.data.len())..std::cmp::max($lhs.data.len(), $rhs.data.len()) {
-                unsafe {
-                    let (value, tmp_carry) = a.next().unchecked_unwrap().carrying_add(0u32, carry);
-                    carry = tmp_carry;
-                    $result.push(value); 
-                }
-
-            }
+            
 
             // Final carry.
             if carry {
@@ -66,6 +72,118 @@ pub mod grou {
             }
         };
     }
+
+
+//UNSAFE USE DESCRIPTION.
+//Uses `unchecked_unwrap()`, which causes undefined behavior if the Option<T> would have been None.
+//This is used in `iter_addition_unchecked!` to gain a significant performance increase (~10%). In
+//it, two iterators are created that correspond to the underlying data structures of the lhs and rhs of
+//an addition operator. The iterators are assigned `largest` and `smallest`, with sizes Nlarge and Nsmall.
+//The algorithm calls both iterators until it has called them Nsmallest times. It then iterates the largest
+//iterator (Nlargest - Nsmallest) times. In this, the undefined behavior is prevented through ensuring that
+//the length is not exceeded.
+
+
+    use unchecked_unwrap::UncheckedUnwrap;
+    // Defines the algorithm behind the addition of two grou numbers.
+    macro_rules! iter_addition_unchecked {
+        ($lhs:expr, $rhs:expr, $result:expr ) => {
+            let mut carry = false;
+
+            // Create iterators
+            let mut largest;
+            let mut smallest;
+
+            if ($lhs.data.len() > $rhs.data.len()) {
+                largest = $lhs.data.iter();
+                smallest = $rhs.data.iter();
+            } else {
+                smallest = $lhs.data.iter();
+                largest = $rhs.data.iter();
+            }
+
+            let smallest_size = std::cmp::min($lhs.data.len(),$rhs.data.len());
+            let largest_size = std::cmp::max($lhs.data.len(),$rhs.data.len());
+
+            // Do until b is exhausted.
+            for _i in 0..smallest_size {
+                unsafe {
+                    let (value, tmp_carry) = largest.next().unchecked_unwrap().carrying_add(*smallest.next().unchecked_unwrap(), carry);
+                    carry = tmp_carry;
+                    $result.push(value);
+                }
+            }
+            // Do until a is also exhausted.
+            for _i in smallest_size..largest_size {
+                if (carry) {
+                    unsafe {
+                        let (value, tmp_carry) = largest.next().unchecked_unwrap().carrying_add(0u32, carry);
+                        carry = tmp_carry;
+                        $result.push(value); 
+                    }
+                } else { // if no carry bit, then u32 + 0 can't overflow.
+                    let value;
+                    unsafe {
+                        value = *largest.next().unchecked_unwrap();
+                    }
+                    $result.push(value);
+                }
+            }
+            
+
+            // Final carry.
+            if carry {
+                $result.push(1);
+            }
+        };
+    }
+
+    // Defines the algorithm behind the addition of two grou numbers.
+    macro_rules! iter_addition_checked {
+        ($lhs:expr, $rhs:expr, $result:expr ) => {
+            let mut carry = false;
+
+            // Create iterators
+            let mut largest;
+            let mut smallest;
+
+            if ($lhs.data.len() > $rhs.data.len()) {
+                largest = $lhs.data.iter();
+                smallest = $rhs.data.iter();
+            } else {
+                smallest = $lhs.data.iter();
+                largest = $rhs.data.iter();
+            }
+            
+            let smallest_size = std::cmp::min($lhs.data.len(),$rhs.data.len());
+            let largest_size = std::cmp::max($lhs.data.len(),$rhs.data.len());
+
+            // Do until b is exhausted.
+            for _i in 0..smallest_size {
+                let (value, tmp_carry) = largest.next().unwrap().carrying_add(*smallest.next().unwrap(), carry);
+                carry = tmp_carry;
+                $result.push(value);
+            }
+            // Do until a is also exhausted.
+            for _i in smallest_size..largest_size {
+                if (carry) {
+                    let (value, tmp_carry) = largest.next().unwrap().carrying_add(0u32, carry);
+                    carry = tmp_carry;
+                    $result.push(value); 
+                } else { // if no carry bit, then u32 + 0 can't overflow.
+                    let value = *largest.next().unwrap();
+                    $result.push(value);
+                }
+            }
+            
+
+            // Final carry.
+            if carry {
+                $result.push(1);
+            }
+        };
+    }
+
 
     /*
     use itertools::EitherOrBoth;
@@ -137,7 +255,7 @@ pub mod grou {
                 fn add(self: Self, other: $type2) -> Grou {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
                     let mut result = Grou::empty(preallocation_size);
-                    iter_addition_unchecked!(self, other, result.data);
+                    iter_zip_twice!(self, other, result.data);
                     return result;
                 }
             }  
@@ -155,7 +273,7 @@ pub mod grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
                     let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
-                    iter_addition_unchecked!(self, other, final_vec);
+                    iter_zip_twice!(self, other, final_vec);
                     self.data = final_vec;
                 }
             }
