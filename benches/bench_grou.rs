@@ -29,8 +29,8 @@ fn grou_add_assign(c: &mut Criterion) {
 }
 
 fn grou_verylarge_addition(c : &mut Criterion) {
-    let mut base_vector: Vec<u32> = Vec::new();
-    for i in 0u32..500u32 {
+    let mut base_vector: Vec<u64> = Vec::new();
+    for i in 0u64..500u64 {
         base_vector.push(i);
     }
     let x = black_box(Grou::from(base_vector.clone()));
@@ -63,6 +63,12 @@ fn grou_fibonacci_5000(c: &mut Criterion) {
     });
 }
 
+fn grou_fibonacci_100k(c: &mut Criterion) {
+    c.bench_function("fibonacci-100k", |b| {
+        b.iter(|| grou_fibonacci(1_00_000));
+    });
+}
+
 fn partial_eq_len_10(c : &mut Criterion) {
     let x = black_box(Grou::from(vec![1,2,3,4,5,6,7,8,9,10]));
     let y = Grou::from(vec![0,2,3,4,5,6,7,8,9,10]);
@@ -73,8 +79,8 @@ fn partial_eq_len_10(c : &mut Criterion) {
 }
 
 fn partial_eq_len_500(c : &mut Criterion) {
-    let mut v : Vec<u32> = Vec::new();
-    let mut w : Vec<u32> = Vec::new();
+    let mut v : Vec<u64> = Vec::new();
+    let mut w : Vec<u64> = Vec::new();
     v.push(1);
     w.push(0);
 
@@ -92,8 +98,8 @@ fn partial_eq_len_500(c : &mut Criterion) {
 }
 
 fn sub_len_50(c : &mut Criterion) {
-    let mut v = Vec::<u32>::new();
-    let mut w = black_box(Vec::<u32>::new());
+    let mut v = Vec::<u64>::new();
+    let mut w = black_box(Vec::<u64>::new());
 
     for i in 0..50 {
         v.push(i);
@@ -109,8 +115,8 @@ fn sub_len_50(c : &mut Criterion) {
 }
 
 fn sub_len_500(c : &mut Criterion) {
-    let mut v = Vec::<u32>::new();
-    let mut w = black_box(Vec::<u32>::new());
+    let mut v = Vec::<u64>::new();
+    let mut w = black_box(Vec::<u64>::new());
 
     for i in 0..500 {
         v.push(i);
@@ -136,6 +142,7 @@ criterion_group!(grou_addition,
     partial_eq_len_500,
     sub_len_50,
     sub_len_500,
+    grou_fibonacci_100k,
     );
 
 criterion_main!(grou_addition);

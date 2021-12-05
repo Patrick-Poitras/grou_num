@@ -5,14 +5,14 @@ mod addition_tests {
     #[test]
     fn test_small_addition() {
         let u = Grou::from(100);
-        let v = Grou::from(u32::MAX);
+        let v = Grou::from(u64::MAX);
 
         let w = u.clone() + v.clone();
         assert_eq!(w, Grou::from(vec![99, 1]));
         let w3 = w.clone() + w.clone() + w;
         assert_eq!(w3, Grou::from(vec![297, 3]));
 
-        let mut x = Grou::from(u32::MAX);
+        let mut x = Grou::from(u64::MAX);
         x += u.clone();
         assert_eq!(v + u, x);
     }
@@ -50,11 +50,11 @@ mod addition_tests {
 
     #[test]
     fn test_overflow() {
-        let mut g = Grou::from(u32::MAX);
+        let mut g = Grou::from(u64::MAX);
         g += Grou::from(1);
         assert_eq!(Grou::from(vec![0,1]), g); 
 
-        let u = u32::MAX;
+        let u = u64::MAX;
         let mut g = Grou::from(vec![0,1,1,1,1,1,1,1,1,1]);
         g +=        Grou::from(vec![u,u,u,u,u,u,u,u,u,u]);
         assert_eq!( Grou::from(vec![u,0,1,1,1,1,1,1,1,1,1]), g);
@@ -93,7 +93,7 @@ mod subtraction_tests {
     fn test_subtract(){
         use grou_num::grou::Grou;
         assert_eq!(Grou::from(vec![1,2,3]) - Grou::from(vec![1,2,3]), Grou::from(0));
-        assert_eq!(Grou::from(vec![6,4,3]) - Grou::from(vec![6,5,1]), Grou::from(vec![0,u32::MAX,1]));
+        assert_eq!(Grou::from(vec![6,4,3]) - Grou::from(vec![6,5,1]), Grou::from(vec![0,u64::MAX,1]));
 
         let u = Grou::from(6);
         let v = Grou::from(10);

@@ -3,7 +3,7 @@
 pub mod grou {
     #[derive(Clone, PartialEq, Eq, Debug)]
     pub struct Grou {
-        data: Vec<u32>,
+        data: Vec<u64>,
     }
 
     impl Grou {
@@ -13,21 +13,21 @@ pub mod grou {
         }
     }
 
-    impl From<u32> for Grou {
-        fn from(small_num: u32) -> Grou {
+    impl From<u64> for Grou {
+        fn from(small_num: u64) -> Grou {
             Grou {
                 data: vec![small_num],
             }
         }
     }
 
-    impl From<Vec<u32>> for Grou {
-        fn from(num: Vec<u32>) -> Grou {
+    impl From<Vec<u64>> for Grou {
+        fn from(num: Vec<u64>) -> Grou {
             Grou { data: num }
         }
     }
     
-    fn remove_trailing_zeros_reverse<'a>(vec:&'a Vec<u32>) -> Vec<&'a u32> {
+    fn remove_trailing_zeros_reverse<'a>(vec:&'a Vec<u64>) -> Vec<&'a u64> {
         vec.iter().rev().peekable().skip_while(|&x| *x == 0).collect()
     }
 
@@ -55,7 +55,7 @@ pub mod grou {
         fn trim(self: &mut Self) {
             let mut final_length = self.data.len();
             for val in self.data.iter().rev() {
-                if *val == 0u32 {
+                if *val == 0u64 {
                     final_length -= 1;
                 } else {
                     break;
@@ -96,7 +96,7 @@ pub mod grou {
             // Do the rest.
             for large in largest {
                 if (carry) {
-                    let (value, tmp_carry) = large.carrying_add(0u32, carry);
+                    let (value, tmp_carry) = large.carrying_add(0u64, carry);
                     carry = tmp_carry;
                     $result.push(value); 
                 } else { // if no carry bit, then u32 + 0 can't overflow.
@@ -197,7 +197,7 @@ use itertools::Itertools;
             impl std::ops::AddAssign<$type2> for Grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
-                    let mut final_vec : Vec<u32> = Vec::with_capacity(preallocation_size);
+                    let mut final_vec : Vec<u64> = Vec::with_capacity(preallocation_size);
                     iter_addition!(self, other, final_vec);
                     self.data = final_vec;
                 }
@@ -212,7 +212,7 @@ use itertools::Itertools;
     impl Grou {
         fn sub_unchecked(self: &Self, other: &Grou) -> Grou {
             let mut borrow = false;
-            let mut result = Vec::<u32>::new();
+            let mut result = Vec::<u64>::new();
             // Assume that self > other.
             let mut lhs = self.data.iter();
             let rhs = other.data.iter();
@@ -225,7 +225,7 @@ use itertools::Itertools;
             // Finish using lhs.
             for i in lhs {
                 if borrow {
-                    let (value, tmp_borrow) = i.borrowing_sub(0u32, borrow);
+                    let (value, tmp_borrow) = i.borrowing_sub(0u64, borrow);
                     result.push(value);
                     borrow = tmp_borrow;
                 } else {
