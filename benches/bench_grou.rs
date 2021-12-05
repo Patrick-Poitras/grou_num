@@ -136,13 +136,19 @@ criterion_group!(grou_addition,
     grou_add,
     grou_add_assign,
     grou_verylarge_addition,
+    );
+
+criterion_group!(grou_fib,
     grou_fibonacci_1000,
     grou_fibonacci_5000,
+    grou_fibonacci_100k,
+);
+
+criterion_group!(grou_partial_eq_sub,
     partial_eq_len_10,
     partial_eq_len_500,
     sub_len_50,
     sub_len_500,
-    grou_fibonacci_100k,
-    );
+);
 
-criterion_main!(grou_addition);
+criterion_main!(grou_addition, grou_fib, grou_partial_eq_sub);

@@ -26,22 +26,30 @@ pub mod grou {
             Grou { data: num }
         }
     }
-    
-    fn remove_trailing_zeros_reverse<'a>(vec:&'a Vec<u64>) -> Vec<&'a u64> {
-        vec.iter().rev().peekable().skip_while(|&x| *x == 0).collect()
-    }
 
     impl std::cmp::PartialOrd for Grou {
         fn partial_cmp(self: &Self, other: &Self) -> Option<std::cmp::Ordering> {
-            let iter_self = remove_trailing_zeros_reverse(&self.data);
-            let iter_other = remove_trailing_zeros_reverse(&other.data);
+            let mut self_len = self.data.len();
+            let mut iter_self =  self.data.iter().rev().peekable();
 
-            if iter_self.len() != iter_other.len() {
-                return iter_self.len().partial_cmp(&iter_other.len());
+            let mut other_len = other.data.len();
+            let mut iter_other =  other.data.iter().rev().peekable();
+
+            while iter_self.next_if_eq(&&0u64).is_some() {
+                self_len -= 1;
+            }
+
+            while iter_other.next_if_eq(&&0u64).is_some() {
+                other_len -= 1;
+            }
+
+
+            if self_len != other_len {
+                return self_len.partial_cmp(&other_len);
             } else {
-                for (self_val, other_val) in iter_self.iter().zip(iter_other.iter()) {
+                for (self_val, other_val) in iter_self.zip(iter_other) {
                     if self_val != other_val {
-                        return self_val.partial_cmp(other_val);
+                        return self_val.partial_cmp(&other_val);
                     }
                 }
                 // At this point all values are identical.
@@ -110,67 +118,6 @@ pub mod grou {
             }
         };
     }
-
-    /*
-    macro_rules! iter_addition {
-        ($lhs:expr, $rhs:expr, $result:expr ) => {
-            let mut carry = false;
-
-            // Iterate over a zip of the lhs and rhs.
-            let maxlen = std::cmp::max($lhs.data.len(), $rhs.data.len());
-            for index in 0..maxlen {
-                //let a :u32 = *$lhs.data.get(index).unwrap_or(&0);
-                //let b :u32 = *$rhs.data.get(index).unwrap_or(&0);
-
-                let a = match $lhs.data.get(index) {
-                    Some(v) => *v,
-                    None => 0u32,
-                };
-                let b = match $rhs.data.get(index) {
-                    Some(v) => *v,
-                    None => 0u32,
-                };
-
-                let (value, tmp_carry) = a.carrying_add(b, carry);
-
-                carry = tmp_carry;
-                $result.push(value);
-            }
-
-            // Final carry.
-            if carry {
-                $result.push(1);
-            }
-        };
-    }
-
-use itertools::EitherOrBoth;
-use itertools::Itertools;
-    macro_rules! iter_zip_addition {
-        ($lhs:expr, $rhs:expr, $result:expr ) => {
-            let mut carry = false;
-
-            // Iterate over a zip of the lhs and rhs.
-            for val in $lhs.data.iter().zip_longest($rhs.data.iter()) {
-                // When either side's iterator is None, because it reached the end, the carrying_add 
-                // method will be called with 0 in the place of the other.
-                let (value, tmp_carry) = match val {
-                    EitherOrBoth::Both(i, j)                       => i.carrying_add(*j, carry),
-                    EitherOrBoth::Left(i) | EitherOrBoth::Right(i) => 0u32.carrying_add(*i, carry),
-                };
-
-                carry = tmp_carry;
-                $result.push(value);
-            }
-
-            // Final carry.
-            if carry {
-                $result.push(1);
-            }
-        };
-    }
-
-    */
 
     macro_rules! addition_impl_grou {
         ($type1:ty, $type2:ty) => {
