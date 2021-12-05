@@ -12,7 +12,7 @@ Currently the focus is primarily on the `Grou` type, which is an unsigned intege
 
 # Immediate priorities:
 * Convert to decimal string.
+* Modular arithmetic
 * ShiftLeft / ShiftRight
-* Subtraction
-* Implement Add<u32> for Grou.
+* Implement `Add<u32>`, `Sub<u32>` for Grou.
 * Multiplication

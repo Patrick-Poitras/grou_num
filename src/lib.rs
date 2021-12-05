@@ -26,6 +26,48 @@ pub mod grou {
             Grou { data: num }
         }
     }
+    
+    fn remove_trailing_zeros_reverse<'a>(vec:&'a Vec<u32>) -> Vec<&'a u32> {
+        vec.iter().rev().peekable().skip_while(|&x| *x == 0).collect()
+    }
+
+    impl std::cmp::PartialOrd for Grou {
+        fn partial_cmp(self: &Self, other: &Self) -> Option<std::cmp::Ordering> {
+            let iter_self = remove_trailing_zeros_reverse(&self.data);
+            let iter_other = remove_trailing_zeros_reverse(&other.data);
+
+            if iter_self.len() != iter_other.len() {
+                return iter_self.len().partial_cmp(&iter_other.len());
+            } else {
+                for (self_val, other_val) in iter_self.iter().zip(iter_other.iter()) {
+                    if self_val != other_val {
+                        return self_val.partial_cmp(other_val);
+                    }
+                }
+                // At this point all values are identical.
+                return Some(std::cmp::Ordering::Equal);
+            }
+        }
+    }
+
+    impl Grou {
+        #[inline]
+        fn trim(self: &mut Self) {
+            let mut final_length = self.data.len();
+            for val in self.data.iter().rev() {
+                if *val == 0u32 {
+                    final_length -= 1;
+                } else {
+                    break;
+                }
+            }
+            if final_length == 0 {
+                // Leave one 0;
+                final_length = 1;
+            }
+            self.data.truncate(final_length);
+        }
+    }
 
     // Shoutout for a tip from Globi on Discord that opened the way for this.
     macro_rules! iter_addition {
@@ -165,4 +207,96 @@ use itertools::Itertools;
 
     add_assign_impl_grou!(Grou);
     add_assign_impl_grou!(&Grou);
+
+    // Subtraction
+    impl Grou {
+        fn sub_unchecked(self: &Self, other: &Grou) -> Grou {
+            let mut borrow = false;
+            let mut result = Vec::<u32>::new();
+            // Assume that self > other.
+            let mut lhs = self.data.iter();
+            let rhs = other.data.iter();
+            for (j,i) in rhs.zip(lhs.by_ref()) {
+                let (value, tmp_borrow) = i.borrowing_sub(*j, borrow);
+                result.push(value);
+                borrow = tmp_borrow;
+            }
+
+            // Finish using lhs.
+            for i in lhs {
+                if borrow {
+                    let (value, tmp_borrow) = i.borrowing_sub(0u32, borrow);
+                    result.push(value);
+                    borrow = tmp_borrow;
+                } else {
+                    result.push(*i);
+                }
+
+            }
+
+            let mut g = Grou::from(result);
+            g.trim();
+            return g;
+        }
+    }
+
+    macro_rules! impl_sub {
+        ($lhs: ty, $rhs: ty) => {
+            impl std::ops::Sub<$rhs> for $lhs {
+                type Output = Grou;
+                fn sub(self, other: $rhs) -> Grou {
+                    match self.partial_cmp(&other).unwrap() {
+                        std::cmp::Ordering::Less => {panic!("Subtraction leads to underflow");},
+                        std::cmp::Ordering::Equal => {return Grou::from(0);},
+                        std::cmp::Ordering::Greater => {return self.sub_unchecked(&other);}
+                    }
+                }
+            }            
+        };
+    }
+
+    impl_sub!(Grou, Grou);
+    impl_sub!(Grou, &Grou);
+    impl_sub!(&Grou, Grou);
+    impl_sub!(&Grou, &Grou);
+
 }
+#[cfg(test)]
+mod partial_ordering_tests {
+    use crate::grou::Grou;
+    #[test]
+    fn test_partial_ordering() {
+        // u < v < w < x < y
+        let u = Grou::from(vec![0,2,0,4,5,0]);
+        let v = Grou::from(vec![1,2,3,4,5,0,0,0,0]);
+        let w = Grou::from(vec![2,2,3,4,5]);
+        let x = Grou::from(vec![0,2,0,4,6,0]);
+        let y = Grou::from(vec![1,2,3,4,6]);
+
+        let vals = vec![u,v,w,x,y];
+        for i in 0..(vals.len()) {
+            for j in i+1..(vals.len()) {
+                assert_eq!(vals[i] < vals[j], true, "{:?} < {:?} failed", vals[i], vals[j]);
+                assert_eq!(vals[i] > vals[j], false, "{:?} > {:?} failed", vals[i], vals[j]);
+            }
+        }
+
+        assert_eq!(Grou::from(vec![]) > Grou::from(vec![]), false);
+        assert_eq!(Grou::from(vec![]) < Grou::from(vec![]), false);
+
+    }
+}
+#[test]
+fn test_subtract(){
+    use crate::grou::Grou;
+    assert_eq!(Grou::from(vec![1,2,3]) - Grou::from(vec![1,2,3]), Grou::from(0));
+    assert_eq!(Grou::from(vec![6,4,3]) - Grou::from(vec![6,5,1]), Grou::from(vec![0,u32::MAX,1]));
+
+    let u = Grou::from(6);
+    let v = Grou::from(10);
+    assert_eq!(v.clone()-u.clone(), Grou::from(4));
+    assert_eq!(&v-u.clone(), Grou::from(4));
+    assert_eq!(v.clone()-&u, Grou::from(4));
+    assert_eq!(&v - &u, Grou::from(4));
+}
+

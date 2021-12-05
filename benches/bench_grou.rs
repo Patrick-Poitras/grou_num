@@ -63,12 +63,79 @@ fn grou_fibonacci_5000(c: &mut Criterion) {
     });
 }
 
+fn partial_eq_len_10(c : &mut Criterion) {
+    let x = black_box(Grou::from(vec![1,2,3,4,5,6,7,8,9,10]));
+    let y = Grou::from(vec![0,2,3,4,5,6,7,8,9,10]);
+
+    c.bench_function("partial_eq-len-10", |b| {
+        b.iter(|| &x > &y)
+    });
+}
+
+fn partial_eq_len_500(c : &mut Criterion) {
+    let mut v : Vec<u32> = Vec::new();
+    let mut w : Vec<u32> = Vec::new();
+    v.push(1);
+    w.push(0);
+
+    for i in 2..=500 {
+        v.push(i);
+        w.push(i);
+    }
+
+    let v = Grou::from(v);
+    let w = Grou::from(w);
+
+    c.bench_function("partial_eq-len-500", |b| {
+        b.iter(|| &v > &w);
+    });
+}
+
+fn sub_len_50(c : &mut Criterion) {
+    let mut v = Vec::<u32>::new();
+    let mut w = black_box(Vec::<u32>::new());
+
+    for i in 0..50 {
+        v.push(i);
+        w.push(i*3);
+    }
+
+    let v = Grou::from(v);
+    let w = Grou::from(w);
+
+    c.bench_function("sub-len-50", |b| {
+        b.iter(|| &w - &v);
+    });
+}
+
+fn sub_len_500(c : &mut Criterion) {
+    let mut v = Vec::<u32>::new();
+    let mut w = black_box(Vec::<u32>::new());
+
+    for i in 0..500 {
+        v.push(i);
+        w.push(i * 3);
+    }
+
+    let v = Grou::from(v);
+    let w = Grou::from(w);
+
+    c.bench_function("sub-len-500", |b| {
+        b.iter(|| &w - &v);
+    });
+}
+
 criterion_group!(grou_addition, 
     grou_create_clone,
     grou_add,
     grou_add_assign,
     grou_verylarge_addition,
     grou_fibonacci_1000,
-    grou_fibonacci_5000);
+    grou_fibonacci_5000,
+    partial_eq_len_10,
+    partial_eq_len_500,
+    sub_len_50,
+    sub_len_500,
+    );
 
 criterion_main!(grou_addition);
