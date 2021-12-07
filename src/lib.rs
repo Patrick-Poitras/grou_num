@@ -207,4 +207,104 @@ pub mod grou {
     impl_sub!(&Grou, Grou);
     impl_sub!(&Grou, &Grou);
 
+    impl Grou {
+        pub fn subset<'a>(self: &'a Self, start: usize, end: usize) -> GrouSubset<'a> {
+            return GrouSubset{data: &self.data[start..end]};
+        }
+
+        pub fn subset_all<'a>(self: &'a Self) -> GrouSubset<'a> {
+            GrouSubset {data: &self.data[..]}
+        }
+
+        pub fn split_2<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>) {
+            let len_start = self.data.len()/2 + self.data.len() % 2;
+
+            let limb1 = self.subset(0, len_start);
+            let limb2 = self.subset(len_start, self.data.len());
+            return (limb1, limb2);
+        }
+
+        pub fn split_3<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>, GrouSubset<'a>) {
+            let offset = match self.data.len() % 3 {
+                0 => 0,
+                _ => 1
+            };
+            let len_limbs = self.data.len() /3 + offset;
+            let limb1 = self.subset(0, len_limbs);
+            let limb2 = self.subset(len_limbs, len_limbs * 2);
+            let limb3 = self.subset(len_limbs*2,self.data.len());
+            return (limb1, limb2, limb3);
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct GrouSubset<'a> {
+        pub data: &'a [u64],
+    }
+
+    macro_rules! impl_addition_grousubset {
+        ($type1: ty, $type2: ty) => {
+            impl std::ops::Add<$type2> for $type1 {
+                type Output = Grou;
+                fn add(self, other: $type2 ) -> Grou {
+                    let mut results = Vec::new();
+                    iter_addition!(self, other, results);
+                    return Grou{data:results};
+                }
+            }
+        };
+    }
+
+    impl_addition_grousubset!(GrouSubset<'_>, GrouSubset<'_>);
+    impl_addition_grousubset!(GrouSubset<'_>, &GrouSubset<'_>);
+    impl_addition_grousubset!(&GrouSubset<'_>, GrouSubset<'_>);
+    impl_addition_grousubset!(&GrouSubset<'_>, &GrouSubset<'_>);
+
+}
+
+
+#[test]
+fn test_grousubset() {
+    use crate::grou::Grou;
+    use crate::grou::GrouSubset;
+
+    let g = Grou::from(vec![1,2,3,4,5,6,7,8,9]);
+    let gs1 = g.subset(0, 3);
+    let gs2 = g.subset(3, 6);
+
+    let mut result = Vec::new();
+    let mut carry = false;
+
+    let gs3 = gs1.clone();
+    let gs4 = gs2.clone();
+
+    for (i, j) in gs1.data.iter().zip(gs2.data.iter()) {
+        let (value, tmp_carry) = i.carrying_add(*j, carry);
+        result.push(value);
+        carry = tmp_carry;
+    }
+
+    assert_eq!(result, vec![5,7,9]);
+    
+    assert_eq!(Grou::from(result), (gs3 + &gs4));
+}
+
+#[test]
+fn test_split() {
+    use crate::grou::Grou;
+    use crate::grou::GrouSubset;
+
+    let g = Grou::from(vec![1,2,3,4,5,6,7,8,9,10,11]);
+
+    //Split 2
+    let (g1, g2) = g.split_2();
+    assert_eq!(g1, Grou::from(vec![1,2,3,4,5,6]).subset_all());
+    assert_eq!(g2, Grou::from(vec![7,8,9,10,11]).subset_all());
+
+    let (g1, g2, g3) = g.split_3();
+    assert_eq!(g1, Grou::from(vec![1,2,3,4]).subset_all());
+    assert_eq!(g2, Grou::from(vec![5,6,7,8]).subset_all());
+    assert_eq!(g3, Grou::from(vec![9,10,11]).subset_all());
+
+
 }

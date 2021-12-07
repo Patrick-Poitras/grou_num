@@ -12,6 +12,7 @@ Currently the focus is primarily on the `Grou` type, which is an unsigned intege
 
 # Immediate priorities:
 * Convert to decimal string.
+* Implement split_n via macro.
 * Modular arithmetic
 * ShiftLeft / ShiftRight
 * Implement `Add<u32>`, `Sub<u32>` for Grou.
