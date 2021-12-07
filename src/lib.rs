@@ -207,6 +207,8 @@ pub mod grou {
     impl_sub!(&Grou, Grou);
     impl_sub!(&Grou, &Grou);
 
+    use itertools::Itertools;
+
     impl Grou {
         pub fn subset<'a>(self: &'a Self, start: usize, end: usize) -> GrouSubset<'a> {
             return GrouSubset{data: &self.data[start..end]};
@@ -217,23 +219,22 @@ pub mod grou {
         }
 
         pub fn split_2<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>) {
-            let len_start = self.data.len()/2 + self.data.len() % 2;
-
-            let limb1 = self.subset(0, len_start);
-            let limb2 = self.subset(len_start, self.data.len());
-            return (limb1, limb2);
+            self.make_chunks(2).map(|x| GrouSubset {data:x}).collect_tuple().unwrap()
         }
 
         pub fn split_3<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>, GrouSubset<'a>) {
-            let offset = match self.data.len() % 3 {
+            self.make_chunks(3).map(|x| GrouSubset {data:x}).collect_tuple().unwrap()
+        }
+
+        // Splits the number into N chunks. Thanks to "The Lua Moon" on Discord
+        // for the suggestion.
+        fn make_chunks<'a>(self: &'a Self, n: usize) -> std::slice::Chunks<'a, u64> {
+            let offset = match self.data.len() % n {
                 0 => 0,
                 _ => 1
             };
-            let len_limbs = self.data.len() /3 + offset;
-            let limb1 = self.subset(0, len_limbs);
-            let limb2 = self.subset(len_limbs, len_limbs * 2);
-            let limb3 = self.subset(len_limbs*2,self.data.len());
-            return (limb1, limb2, limb3);
+            let chunk_length = self.data.len() / n + offset;
+            return self.data[..].chunks(chunk_length);
         }
     }
 
@@ -305,6 +306,4 @@ fn test_split() {
     assert_eq!(g1, Grou::from(vec![1,2,3,4]).subset_all());
     assert_eq!(g2, Grou::from(vec![5,6,7,8]).subset_all());
     assert_eq!(g3, Grou::from(vec![9,10,11]).subset_all());
-
-
 }
