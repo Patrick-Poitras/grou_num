@@ -43,7 +43,6 @@ pub mod grou {
                 other_len -= 1;
             }
 
-
             if self_len != other_len {
                 return self_len.partial_cmp(&other_len);
             } else {
@@ -271,59 +270,4 @@ pub mod grou {
     impl_addition_grousubset!(&GrouSubset<'_>, GrouSubset<'_>);
     impl_addition_grousubset!(&GrouSubset<'_>, &GrouSubset<'_>);
 
-    
-}
-
-
-#[test]
-fn test_grousubset() {
-    use crate::grou::Grou;
-
-    let g = Grou::from(vec![1,2,3,4,5,6,7,8,9]);
-    let gs1 = g.subset(0, 3);
-    let gs2 = g.subset(3, 6);
-
-    let mut result = Vec::new();
-    let mut carry = false;
-
-    let gs3 = gs1.clone();
-    let gs4 = gs2.clone();
-
-    for (i, j) in gs1.data.iter().zip(gs2.data.iter()) {
-        let (value, tmp_carry) = i.carrying_add(*j, carry);
-        result.push(value);
-        carry = tmp_carry;
-    }
-
-    assert_eq!(result, vec![5,7,9]);
-    
-    assert_eq!(Grou::from(result), (gs3 + &gs4));
-}
-
-#[test]
-fn test_split() {
-    use crate::grou::Grou;
-
-    let g = Grou::from(vec![1,2,3,4,5,6,7,8,9,10,11]);
-
-    //Split 2
-    let (g1, g2) = g.split_2();
-    assert_eq!(g1, Grou::from(vec![1,2,3,4,5,6]).subset_all());
-    assert_eq!(g2, Grou::from(vec![7,8,9,10,11]).subset_all());
-
-    let (g1, g2, g3) = g.split_3();
-    assert_eq!(g1, Grou::from(vec![1,2,3,4]).subset_all());
-    assert_eq!(g2, Grou::from(vec![5,6,7,8]).subset_all());
-    assert_eq!(g3, Grou::from(vec![9,10,11]).subset_all());
-
-    let g = Grou::from(vec![1,]);
-    let (g1, g2) = g.split_2();
-    assert_eq!(g1, Grou::from(vec![1]).subset_all());
-    assert_eq!(g2, Grou::from(vec![]).subset_all());
-
-    let g = Grou::from(vec![1,2]);
-    let (g1, g2, g3) = g.split_3();
-    assert_eq!(g1, Grou::from(vec![1]).subset_all());
-    assert_eq!(g2, Grou::from(vec![2]).subset_all());
-    assert_eq!(g3, Grou::from(vec![]).subset_all());
 }
