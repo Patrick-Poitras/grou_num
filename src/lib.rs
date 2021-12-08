@@ -207,8 +207,6 @@ pub mod grou {
     impl_sub!(&Grou, Grou);
     impl_sub!(&Grou, &Grou);
 
-    use itertools::Itertools;
-
     impl Grou {
         pub fn subset<'a>(self: &'a Self, start: usize, end: usize) -> GrouSubset<'a> {
             return GrouSubset{data: &self.data[start..end]};
@@ -218,12 +216,24 @@ pub mod grou {
             GrouSubset {data: &self.data[..]}
         }
 
+        // TODO: Refactor this mess.
         pub fn split_2<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>) {
-            self.make_chunks(2).map(|x| GrouSubset {data:x}).collect_tuple().unwrap()
+            let mut x = self.make_chunks(2).map(|x| GrouSubset {data:x});
+
+            let i = x.next().unwrap_or(GrouSubset{data:&[]});
+            let j = x.next().unwrap_or(GrouSubset{data:&[]});
+
+            (i, j)
         }
 
         pub fn split_3<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>, GrouSubset<'a>) {
-            self.make_chunks(3).map(|x| GrouSubset {data:x}).collect_tuple().unwrap()
+            let mut x = self.make_chunks(3).map(|x| GrouSubset {data:x});
+
+            let i = x.next().unwrap_or(GrouSubset{data:&[]});
+            let j = x.next().unwrap_or(GrouSubset{data:&[]});
+            let k = x.next().unwrap_or(GrouSubset{data:&[]});
+
+            (i,j,k)
         }
 
         // Splits the number into N chunks. Thanks to "The Lua Moon" on Discord
@@ -261,13 +271,13 @@ pub mod grou {
     impl_addition_grousubset!(&GrouSubset<'_>, GrouSubset<'_>);
     impl_addition_grousubset!(&GrouSubset<'_>, &GrouSubset<'_>);
 
+    
 }
 
 
 #[test]
 fn test_grousubset() {
     use crate::grou::Grou;
-    use crate::grou::GrouSubset;
 
     let g = Grou::from(vec![1,2,3,4,5,6,7,8,9]);
     let gs1 = g.subset(0, 3);
@@ -293,7 +303,6 @@ fn test_grousubset() {
 #[test]
 fn test_split() {
     use crate::grou::Grou;
-    use crate::grou::GrouSubset;
 
     let g = Grou::from(vec![1,2,3,4,5,6,7,8,9,10,11]);
 
@@ -306,4 +315,15 @@ fn test_split() {
     assert_eq!(g1, Grou::from(vec![1,2,3,4]).subset_all());
     assert_eq!(g2, Grou::from(vec![5,6,7,8]).subset_all());
     assert_eq!(g3, Grou::from(vec![9,10,11]).subset_all());
+
+    let g = Grou::from(vec![1,]);
+    let (g1, g2) = g.split_2();
+    assert_eq!(g1, Grou::from(vec![1]).subset_all());
+    assert_eq!(g2, Grou::from(vec![]).subset_all());
+
+    let g = Grou::from(vec![1,2]);
+    let (g1, g2, g3) = g.split_3();
+    assert_eq!(g1, Grou::from(vec![1]).subset_all());
+    assert_eq!(g2, Grou::from(vec![2]).subset_all());
+    assert_eq!(g3, Grou::from(vec![]).subset_all());
 }
