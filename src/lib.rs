@@ -184,6 +184,14 @@ pub mod grou {
             g.trim();
             return g;
         }
+
+        fn sub_with_sign(&self, other: &Grou) -> (bool, Grou) {
+            match self.partial_cmp(&other).unwrap() {
+                std::cmp::Ordering::Less => {return (true, other - self)},
+                std::cmp::Ordering::Equal => {return (false, Grou::from(0))},
+                std::cmp::Ordering::Greater => {return (true, self - other)},
+            }
+        }
     }
 
     macro_rules! impl_sub {
@@ -270,4 +278,15 @@ pub mod grou {
     impl_addition_grousubset!(&GrouSubset<'_>, GrouSubset<'_>);
     impl_addition_grousubset!(&GrouSubset<'_>, &GrouSubset<'_>);
 
+    //Implement GrouSubset/Grou addition
+    impl_addition_grousubset!(GrouSubset<'_>, Grou);
+    impl_addition_grousubset!(GrouSubset<'_>, &Grou);
+    impl_addition_grousubset!(&GrouSubset<'_>, Grou);
+    impl_addition_grousubset!(&GrouSubset<'_>, &Grou);
+    impl_addition_grousubset!(Grou, GrouSubset<'_>);
+    impl_addition_grousubset!(Grou, &GrouSubset<'_>);
+    impl_addition_grousubset!(&Grou, GrouSubset<'_>);
+    impl_addition_grousubset!(&Grou, &GrouSubset<'_>);
+
 }
+

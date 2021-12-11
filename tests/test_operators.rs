@@ -60,6 +60,23 @@ mod addition_tests {
         g +=        Grou::from(vec![u,u,u,u,u,u,u,u,u,u]);
         assert_eq!( Grou::from(vec![u,0,1,1,1,1,1,1,1,1,1]), g);
     }
+
+    #[test]
+    fn test_addition_grousubset_grou(){
+        use grou_num::grou::Grou;
+        let u = Grou::from(vec![1,2,3,4,5]);
+        let v = Grou::from(vec![1,2,3,4,5]);
+        let (v0, v1) = v.split_2();
+        assert_eq!(v0.clone() + &u, Grou::from(vec![2,4,6,4,5]));
+        assert_eq!(v1.clone() + u.clone(), Grou::from(vec![5,7,3,4,5]));
+        assert_eq!(&v0 + &u, Grou::from(vec![2,4,6,4,5]));
+        assert_eq!(&v1 + u.clone(), Grou::from(vec![5,7,3,4,5]));   
+
+        assert_eq!(&u + &v0, Grou::from(vec![2,4,6,4,5]));
+        assert_eq!(&u + v1, Grou::from(vec![5,7,3,4,5]));
+        assert_eq!(u.clone() + &v0, Grou::from(vec![2,4,6,4,5]));
+        assert_eq!(u.clone() + v0, Grou::from(vec![2,4,6,4,5]));
+    }
 }
 
 #[cfg(test)]
