@@ -11,11 +11,12 @@ Otherwise, this is intended to use the currently feature-gated 'bigint_helper_me
 Currently the focus is primarily on the `Grou` type, which is an unsigned integer.
 
 # Immediate priorities:
-* Multiplication
+* Multiplication benchmarking
 * Convert to decimal string.
 * Modular arithmetic
 * ShiftLeft / ShiftRight
 
 # Secondary priorities:
+* Add some more tests for the multiplication individual methods.
 * Implement split_n via macro and refactor.
-* Implement `Add<u32>`, `Sub<u32>` for Grou.
+* Implement `Add<u64>`, `Sub<u64>` for Grou.
