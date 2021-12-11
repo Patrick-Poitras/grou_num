@@ -9,7 +9,9 @@ pub mod grou {
     impl Grou {
         // Empty array. Preallocated to size.
         pub fn empty(size: usize) -> Grou {
-            Grou { data: Vec::with_capacity(size) }
+            Grou {
+                data: Vec::with_capacity(size),
+            }
         }
     }
 
@@ -27,35 +29,42 @@ pub mod grou {
         }
     }
 
-    impl std::cmp::PartialOrd for Grou {
-        fn partial_cmp(self: &Self, other: &Self) -> Option<std::cmp::Ordering> {
-            let mut self_len = self.data.len();
-            let mut iter_self =  self.data.iter().rev().peekable();
+    macro_rules! impl_partial_cmp {
+        ($type1: ty) => {
+            impl std::cmp::PartialOrd for $type1 {
+                fn partial_cmp(self: &Self, other: &Self) -> Option<std::cmp::Ordering> {
+                    let mut self_len = self.data.len();
+                    let mut iter_self = self.data.iter().rev().peekable();
 
-            let mut other_len = other.data.len();
-            let mut iter_other =  other.data.iter().rev().peekable();
+                    let mut other_len = other.data.len();
+                    let mut iter_other = other.data.iter().rev().peekable();
 
-            while iter_self.next_if_eq(&&0u64).is_some() {
-                self_len -= 1;
-            }
+                    while iter_self.next_if_eq(&&0u64).is_some() {
+                        self_len -= 1;
+                    }
 
-            while iter_other.next_if_eq(&&0u64).is_some() {
-                other_len -= 1;
-            }
+                    while iter_other.next_if_eq(&&0u64).is_some() {
+                        other_len -= 1;
+                    }
 
-            if self_len != other_len {
-                return self_len.partial_cmp(&other_len);
-            } else {
-                for (self_val, other_val) in iter_self.zip(iter_other) {
-                    if self_val != other_val {
-                        return self_val.partial_cmp(&other_val);
+                    if self_len != other_len {
+                        return self_len.partial_cmp(&other_len);
+                    } else {
+                        for (self_val, other_val) in iter_self.zip(iter_other) {
+                            if self_val != other_val {
+                                return self_val.partial_cmp(&other_val);
+                            }
+                        }
+                        // At this point all values are identical.
+                        return Some(std::cmp::Ordering::Equal);
                     }
                 }
-                // At this point all values are identical.
-                return Some(std::cmp::Ordering::Equal);
             }
-        }
+        };
     }
+
+    impl_partial_cmp!(Grou);
+    impl_partial_cmp!(GrouSubset<'_>);
 
     impl Grou {
         #[inline]
@@ -95,9 +104,9 @@ pub mod grou {
 
             // Do until smallest iterator is exhausted.
             for (small, large) in smallest.zip(largest.by_ref()) {
-                    let (value, tmp_carry) = small.carrying_add(*large, carry);
-                    carry = tmp_carry;
-                    $result.push(value);
+                let (value, tmp_carry) = small.carrying_add(*large, carry);
+                carry = tmp_carry;
+                $result.push(value);
             }
 
             // Do the rest.
@@ -105,8 +114,9 @@ pub mod grou {
                 if (carry) {
                     let (value, tmp_carry) = large.carrying_add(0u64, carry);
                     carry = tmp_carry;
-                    $result.push(value); 
-                } else { // if no carry bit, then u32 + 0 can't overflow.
+                    $result.push(value);
+                } else {
+                    // if no carry bit, then u32 + 0 can't overflow.
                     $result.push(*large);
                 }
             }
@@ -120,7 +130,7 @@ pub mod grou {
 
     macro_rules! addition_impl_grou {
         ($type1:ty, $type2:ty) => {
-             impl std::ops::Add<$type2> for $type1 {
+            impl std::ops::Add<$type2> for $type1 {
                 type Output = Grou;
 
                 fn add(self: Self, other: $type2) -> Grou {
@@ -129,11 +139,11 @@ pub mod grou {
                     iter_addition!(self, other, result.data);
                     return result;
                 }
-            }  
+            }
         };
     }
 
-    addition_impl_grou!(Grou,  Grou);
+    addition_impl_grou!(Grou, Grou);
     addition_impl_grou!(&Grou, Grou);
     addition_impl_grou!(Grou, &Grou);
     addition_impl_grou!(&Grou, &Grou);
@@ -143,7 +153,7 @@ pub mod grou {
             impl std::ops::AddAssign<$type2> for Grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
                     let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
-                    let mut final_vec : Vec<u64> = Vec::with_capacity(preallocation_size);
+                    let mut final_vec: Vec<u64> = Vec::with_capacity(preallocation_size);
                     iter_addition!(self, other, final_vec);
                     self.data = final_vec;
                 }
@@ -154,45 +164,42 @@ pub mod grou {
     add_assign_impl_grou!(Grou);
     add_assign_impl_grou!(&Grou);
 
-    // Subtraction
-    impl Grou {
-        fn sub_unchecked(self: &Self, other: &Grou) -> Grou {
-            let mut borrow = false;
-            let mut result = Vec::<u64>::new();
-            // Assume that self > other.
-            let mut lhs = self.data.iter();
-            let rhs = other.data.iter();
-            for (j,i) in rhs.zip(lhs.by_ref()) {
-                let (value, tmp_borrow) = i.borrowing_sub(*j, borrow);
-                result.push(value);
-                borrow = tmp_borrow;
-            }
+    macro_rules! impl_sub_unchecked {
+        ($lhs: ty, $rhs: ty) => {
+            impl $lhs {
+                fn sub_unchecked(self: &Self, other: &$rhs) -> Grou {
+                    let mut borrow = false;
+                    let mut result = Vec::<u64>::new();
+                    // Assume that self > other.
+                    let mut lhs = self.data.iter();
+                    let rhs = other.data.iter();
+                    for (j, i) in rhs.zip(lhs.by_ref()) {
+                        let (value, tmp_borrow) = i.borrowing_sub(*j, borrow);
+                        result.push(value);
+                        borrow = tmp_borrow;
+                    }
 
-            // Finish using lhs.
-            for i in lhs {
-                if borrow {
-                    let (value, tmp_borrow) = i.borrowing_sub(0u64, borrow);
-                    result.push(value);
-                    borrow = tmp_borrow;
-                } else {
-                    result.push(*i);
+                    // Finish using lhs.
+                    for i in lhs {
+                        if borrow {
+                            let (value, tmp_borrow) = i.borrowing_sub(0u64, borrow);
+                            result.push(value);
+                            borrow = tmp_borrow;
+                        } else {
+                            result.push(*i);
+                        }
+                    }
+
+                    let mut g = Grou::from(result);
+                    g.trim();
+                    return g;
                 }
-
             }
-
-            let mut g = Grou::from(result);
-            g.trim();
-            return g;
-        }
-
-        fn sub_with_sign(&self, other: &Grou) -> (bool, Grou) {
-            match self.partial_cmp(&other).unwrap() {
-                std::cmp::Ordering::Less => {return (true, other - self)},
-                std::cmp::Ordering::Equal => {return (false, Grou::from(0))},
-                std::cmp::Ordering::Greater => {return (true, self - other)},
-            }
-        }
+        };
     }
+
+    impl_sub_unchecked!(Grou, Grou);
+    impl_sub_unchecked!(GrouSubset<'_>, GrouSubset<'_>);
 
     macro_rules! impl_sub {
         ($lhs: ty, $rhs: ty) => {
@@ -200,12 +207,18 @@ pub mod grou {
                 type Output = Grou;
                 fn sub(self, other: $rhs) -> Grou {
                     match self.partial_cmp(&other).unwrap() {
-                        std::cmp::Ordering::Less => {panic!("Subtraction leads to underflow");},
-                        std::cmp::Ordering::Equal => {return Grou::from(0);},
-                        std::cmp::Ordering::Greater => {return self.sub_unchecked(&other);}
+                        std::cmp::Ordering::Less => {
+                            panic!("Subtraction leads to underflow");
+                        }
+                        std::cmp::Ordering::Equal => {
+                            return Grou::from(0);
+                        }
+                        std::cmp::Ordering::Greater => {
+                            return self.sub_unchecked(&other);
+                        }
                     }
                 }
-            }            
+            }
         };
     }
 
@@ -214,33 +227,70 @@ pub mod grou {
     impl_sub!(&Grou, Grou);
     impl_sub!(&Grou, &Grou);
 
+    macro_rules! impl_sub_with_sign {
+        ($lhs:ty, $rhs:ty) => {
+            impl $lhs {
+                fn sub_with_sign(&self, other: $rhs) -> (bool, Grou) {
+                    match self.partial_cmp(other).unwrap() {
+                        std::cmp::Ordering::Less => return (true, other.sub_unchecked(self)),
+                        std::cmp::Ordering::Equal => return (false, Grou::from(0)),
+                        std::cmp::Ordering::Greater => return (true, self.sub_unchecked(other)),
+                    }
+                }
+            }
+        };
+    }
+
+    impl_sub_with_sign!(Grou, &Grou);
+    impl_sub_with_sign!(GrouSubset<'_>, &GrouSubset<'_>);
+
     impl Grou {
         pub fn subset<'a>(self: &'a Self, start: usize, end: usize) -> GrouSubset<'a> {
-            return GrouSubset{data: &self.data[start..end]};
+            return GrouSubset {
+                data: &self.data[start..end],
+            };
         }
 
         pub fn subset_all<'a>(self: &'a Self) -> GrouSubset<'a> {
-            GrouSubset {data: &self.data[..]}
+            GrouSubset {
+                data: &self.data[..],
+            }
+        }
+
+        pub fn split_off_block<'a>(self: &'a Self, length: usize, start: usize) -> GrouSubset<'a> {
+            if self.data.len() <= start {
+                return GrouSubset {
+                    data: &self.data[0..0],
+                };
+            } else if self.data.len() - start < length {
+                return GrouSubset {
+                    data: &self.data[start..],
+                };
+            } else {
+                return GrouSubset {
+                    data: &self.data[start..start + length],
+                };
+            }
         }
 
         // TODO: Refactor this mess.
         pub fn split_2<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>) {
-            let mut x = self.make_chunks(2).map(|x| GrouSubset {data:x});
+            let mut x = self.make_chunks(2).map(|x| GrouSubset { data: x });
 
-            let i = x.next().unwrap_or(GrouSubset{data:&[]});
-            let j = x.next().unwrap_or(GrouSubset{data:&[]});
+            let i = x.next().unwrap_or(GrouSubset { data: &[] });
+            let j = x.next().unwrap_or(GrouSubset { data: &[] });
 
             (i, j)
         }
 
         pub fn split_3<'a>(self: &'a Self) -> (GrouSubset<'a>, GrouSubset<'a>, GrouSubset<'a>) {
-            let mut x = self.make_chunks(3).map(|x| GrouSubset {data:x});
+            let mut x = self.make_chunks(3).map(|x| GrouSubset { data: x });
 
-            let i = x.next().unwrap_or(GrouSubset{data:&[]});
-            let j = x.next().unwrap_or(GrouSubset{data:&[]});
-            let k = x.next().unwrap_or(GrouSubset{data:&[]});
+            let i = x.next().unwrap_or(GrouSubset { data: &[] });
+            let j = x.next().unwrap_or(GrouSubset { data: &[] });
+            let k = x.next().unwrap_or(GrouSubset { data: &[] });
 
-            (i,j,k)
+            (i, j, k)
         }
 
         // Splits the number into N chunks. Thanks to "The Lua Moon" on Discord
@@ -248,7 +298,7 @@ pub mod grou {
         fn make_chunks<'a>(self: &'a Self, n: usize) -> std::slice::Chunks<'a, u64> {
             let offset = match self.data.len() % n {
                 0 => 0,
-                _ => 1
+                _ => 1,
             };
             let chunk_length = self.data.len() / n + offset;
             return self.data[..].chunks(chunk_length);
@@ -264,10 +314,10 @@ pub mod grou {
         ($type1: ty, $type2: ty) => {
             impl std::ops::Add<$type2> for $type1 {
                 type Output = Grou;
-                fn add(self, other: $type2 ) -> Grou {
+                fn add(self, other: $type2) -> Grou {
                     let mut results = Vec::new();
                     iter_addition!(self, other, results);
-                    return Grou{data:results};
+                    return Grou { data: results };
                 }
             }
         };
@@ -288,5 +338,108 @@ pub mod grou {
     impl_addition_grousubset!(&Grou, GrouSubset<'_>);
     impl_addition_grousubset!(&Grou, &GrouSubset<'_>);
 
-}
+    impl Grou {
+        // Performs the multiplication of a GrouSubset and an u64, and adds the
+        // result to the value in self.
+        pub fn add_multiply_result<'a>(&mut self, lhs: &GrouSubset<'a>, rhs: u64, offset: usize) {
+            let mut carry = 0u64;
+            let mut megacarry = false;
 
+            for (ind, val) in lhs.data.iter().enumerate() {
+                let effective_ind = offset + ind;
+                // Add another box if lhs.data > self.data
+                while self.data.len() <= effective_ind {
+                    self.data.push(0);
+                }
+                let (value, tmp_carry) = val.carrying_mul(rhs, carry);
+                let (value, tmp_carry_grou) = self.data[effective_ind].carrying_add(value, false);
+                self.data[effective_ind] = value;
+                if tmp_carry_grou || megacarry {
+                    let (tmp_carry, overflow) =
+                        tmp_carry.carrying_add(tmp_carry_grou as u64, megacarry);
+                    carry = tmp_carry;
+                    megacarry = overflow;
+                } else {
+                    carry = tmp_carry;
+                    megacarry = false;
+                }
+            }
+
+            let mut current_index = lhs.data.len();
+            while carry > 0 || megacarry {
+                if self.data.len() == current_index {
+                    self.data.push(0);
+                }
+
+                let (value, tmp_carry) = self.data[current_index].carrying_add(carry, megacarry);
+                self.data[current_index] = value;
+                carry = 0;
+                megacarry = tmp_carry;
+                current_index += 1;
+            }
+        }
+
+        #[inline]
+        pub fn move_vec_elements_right(&mut self, shift: usize) {
+            self.data.resize(self.data.len() + shift, 0);
+            self.data.rotate_right(shift);
+        }
+    }
+
+    impl GrouSubset<'_> {
+        // Straight multiplication of two grou subsets of length
+        // A and B respectively will have A*B operations.
+        fn multiply_straight<'a>(&self, rhs: &GrouSubset<'a>) -> Grou {
+            let mut ret_grou = Grou::empty(self.data.len() + rhs.data.len());
+            for (ind, rhs_value) in rhs.data.iter().enumerate() {
+                ret_grou.add_multiply_result(self, *rhs_value, ind);
+            }
+            ret_grou.trim();
+            return ret_grou;
+        }
+    }
+
+    impl std::ops::Mul<&GrouSubset<'_>> for &GrouSubset<'_> {
+        type Output = Grou;
+        fn mul<'a>(self, rhs: &GrouSubset<'a>) -> Grou {
+            self.multiply_straight(&rhs)
+        }
+    }
+
+    // Implementing Karatsuba.
+    impl Grou {
+        pub fn karatsuba_mul(&self, rhs: &Grou) -> Grou {
+            // Step 1: Split into GrouSubsets
+            let block_length = std::cmp::max(self.data.len(), rhs.data.len());
+            let block_length = block_length / 2 + block_length % 2;
+            let a0 = self.split_off_block(block_length, 0);
+            let a1 = self.split_off_block(block_length, a0.data.len());
+            let b0 = rhs.split_off_block(block_length, 0);
+            let b1 = rhs.split_off_block(block_length, b0.data.len());
+
+            // Make temporary values.
+            let high = &b1 * &a1;
+            let low = &b0 * &a0;
+            let mut t0 = high.clone();
+            t0.move_vec_elements_right(2 * block_length);
+            t0 += &low;
+
+            let (sign_a, delta_a) = &a1.sub_with_sign(&a0);
+            let (sign_b, delta_b) = &b1.sub_with_sign(&b0);
+
+            let mut t1 = high + low;
+            let mut t2 = &delta_a.subset_all() * &delta_b.subset_all();
+
+            t1.move_vec_elements_right(block_length);
+            t2.move_vec_elements_right(block_length);
+
+            //sign = true => addition, subtraction otherwise.
+            let sign = sign_a ^ sign_b;
+            if sign {
+                return t0 + t1 + t2;
+            } else {
+                return (t0 + t1) - t2;
+            }
+        }
+    }
+}
