@@ -74,7 +74,7 @@ fn string_into_packets(s: &str, packet_length: usize) -> Vec<&str> {
         (first, last) = first.split_at(first.len() - max_string_size);
         ret_vec.push(last);
     } 
-    if first.is_empty() {
+    if !first.is_empty() {
         ret_vec.push(first);
     }
     return ret_vec;
