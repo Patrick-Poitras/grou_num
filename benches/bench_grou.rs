@@ -29,12 +29,7 @@ fn grou_add_assign(c: &mut Criterion) {
 }
 
 fn grou_verylarge_addition(c : &mut Criterion) {
-    let mut base_vector: Vec<u64> = Vec::new();
-    for i in 0u64..500u64 {
-        base_vector.push(i);
-    }
-    let x = black_box(Grou::from(base_vector.clone()));
-    let y = black_box(Grou::from(base_vector.clone()));
+    let (x,y) = generate_grou_pair(500);
     c.bench_function("add-verylarge", |b| {
         b.iter(|| &x + &y);
     });
@@ -97,35 +92,29 @@ fn partial_eq_len_500(c : &mut Criterion) {
     });
 }
 
-fn sub_len_50(c : &mut Criterion) {
-    let mut v = Vec::<u64>::new();
+fn generate_grou_pair(length: u64) -> (Grou, Grou) {
+    let mut v = black_box(Vec::<u64>::new());
     let mut w = black_box(Vec::<u64>::new());
 
-    for i in 0..50 {
+    for i in 0..length {
         v.push(i);
         w.push(i*3);
     }
 
     let v = Grou::from(v);
     let w = Grou::from(w);
+    return (v,w);
+}
 
+fn sub_len_50(c : &mut Criterion) {
+    let (v, w) = generate_grou_pair(50);
     c.bench_function("sub-len-50", |b| {
         b.iter(|| &w - &v);
     });
 }
 
 fn sub_len_500(c : &mut Criterion) {
-    let mut v = Vec::<u64>::new();
-    let mut w = black_box(Vec::<u64>::new());
-
-    for i in 0..500 {
-        v.push(i);
-        w.push(i * 3);
-    }
-
-    let v = Grou::from(v);
-    let w = Grou::from(w);
-
+    let (v, w) = generate_grou_pair(50);
     c.bench_function("sub-len-500", |b| {
         b.iter(|| &w - &v);
     });
@@ -151,4 +140,20 @@ criterion_group!(grou_partial_eq_sub,
     sub_len_500,
 );
 
-criterion_main!(grou_addition, grou_fib, grou_partial_eq_sub);
+// Benchmarks for multiplication
+fn mul_karatsuba_len50(c : &mut Criterion) {
+    let (v, w) = generate_grou_pair(50);
+    c.bench_function("mul-karatsuba-len50", |b| {
+        b.iter(|| w.karatsuba_mul(&v));
+    });
+}
+
+fn mul_karatsuba_len500(c : &mut Criterion) {
+    let (v, w) = generate_grou_pair(500);
+    c.bench_function("mul-karatsuba-len500", |b| {
+        b.iter(|| w.karatsuba_mul(&v));
+    });
+}
+
+criterion_group!(mul_karatsuba, mul_karatsuba_len50, mul_karatsuba_len500);
+criterion_main!(grou_addition, grou_fib, grou_partial_eq_sub, mul_karatsuba);
