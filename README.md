@@ -23,7 +23,6 @@ Once that is complete, the code is going to be refactored, documented, and then 
 publishing there until the process is complete.
 
 # Immediate priorities:
-* Refactor radix conversion, add binary, hexadecimal.
 * Multiplication benchmarking
 * Do testing of small addition, small multiplication for Grou.
 * Modular arithmetic
