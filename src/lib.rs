@@ -170,6 +170,7 @@ pub mod grou {
                 fn sub_unchecked(self: &Self, other: &$rhs) -> Grou {
                     let mut borrow = false;
                     let mut result = Vec::<u64>::new();
+
                     // Assume that self > other.
                     let mut lhs = self.data.iter();
                     let rhs = other.data.iter();
@@ -420,17 +421,18 @@ pub mod grou {
             // Make temporary values.
             let high = &b1 * &a1;
             let low = &b0 * &a0;
-            let mut t0 = high.clone();
-            t0.move_vec_elements_right(2 * block_length);
-            t0 += &low;
+            let mut t0 = &high + &low;
+
+            let mut t1 = high;
+            t1.move_vec_elements_right(2 * block_length);
+            t1 += low;
 
             let (sign_a, delta_a) = &a1.sub_with_sign(&a0);
             let (sign_b, delta_b) = &b1.sub_with_sign(&b0);
 
-            let mut t1 = high + low;
             let mut t2 = &delta_a.subset_all() * &delta_b.subset_all();
 
-            t1.move_vec_elements_right(block_length);
+            t0.move_vec_elements_right(block_length);
             t2.move_vec_elements_right(block_length);
 
             //sign = true => addition, subtraction otherwise.
