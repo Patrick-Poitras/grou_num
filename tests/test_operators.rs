@@ -220,8 +220,6 @@ mod multiplication {
 
     #[test]
     fn test_multiplication_karatsuba() {
-        let g = Grou::from(vec![u64::MAX, u64::MAX]);
-        let (g0, g1) = g.split_2();
         let ret_grou = Grou::from(vec![10, 10]);
         let r2 = ret_grou.karatsuba_mul(&Grou::from(vec![5, 5]));
         assert_eq!(r2, Grou::from(vec![50, 100, 50]));

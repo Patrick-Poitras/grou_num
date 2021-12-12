@@ -1,4 +1,7 @@
 #![feature(bigint_helper_methods)]
+#![feature(destructuring_assignment)]
+
+pub mod radix_convert;
 
 pub mod grou {
     #[derive(Clone, PartialEq, Eq, Debug)]
@@ -28,6 +31,17 @@ pub mod grou {
             Grou { data: num }
         }
     }
+
+    /// The radix to Grou conversion takes in a string, and
+    /// converts it to a Grou unsigned integer. This conversion
+    /// is dependant on the prefix of the string, where:
+    /// 0x: indicates hexadecimal
+    /// 0b: indicates binary
+    ///   : indicates decimal
+    /// 
+    /// To get an explicit conversion, you can use the functions
+    /// Grou::from_dec(), Grou::from_hex(), and Grou::from_bin().
+    //impl From<&str> for Grou;
 
     macro_rules! impl_partial_cmp {
         ($type1: ty) => {
@@ -82,6 +96,46 @@ pub mod grou {
                 final_length = 1;
             }
             self.data.truncate(final_length);
+        }
+    }
+
+    impl Grou {
+        pub fn addition_small(&mut self, rhs:u64) {
+            if self.data.len() == 0 {
+                self.data.push(rhs);
+                return;
+            }
+            let mut carry = false;
+            let mut local_rhs = rhs;
+            for val in self.data.iter_mut() {
+                let (value, tmp_carry) = val.carrying_add(local_rhs, carry);
+                *val = value;
+                carry = tmp_carry;
+
+                local_rhs = 0;
+                if !carry {
+                    break;
+                }
+            }
+
+            if carry {
+                self.data.push(1);
+            }
+        }
+    }
+
+    impl std::ops::Add<u64> for Grou {
+        type Output = Grou;
+        fn add(self, rhs:u64) -> Grou {
+            let mut ret_grou = self.clone();
+            ret_grou.addition_small(rhs);
+            ret_grou
+        }
+    }
+
+    impl std::ops::AddAssign<u64> for Grou {
+        fn add_assign(&mut self, rhs:u64) {
+            self.addition_small(rhs);
         }
     }
 
@@ -338,6 +392,36 @@ pub mod grou {
     impl_addition_grousubset!(Grou, &GrouSubset<'_>);
     impl_addition_grousubset!(&Grou, GrouSubset<'_>);
     impl_addition_grousubset!(&Grou, &GrouSubset<'_>);
+
+    impl Grou {
+        // Underlying function for Mul<u64> and MulAssign<u64>
+        pub fn multiply_small(&mut self, rhs: u64) {
+            let mut carry = 0u64;
+            for val in self.data.iter_mut() {
+                let (value, tmp_carry) = val.carrying_mul(rhs, carry);
+                *val = value;
+                carry = tmp_carry;
+            }
+            if carry > 0 {
+                self.data.push(carry);
+            }
+        }
+    }
+
+    impl std::ops::Mul<u64> for Grou {
+        type Output = Grou;
+        fn mul(self, rhs:u64) -> Grou {
+            let mut ret_grou = self.clone();
+            ret_grou.multiply_small(rhs);
+            return ret_grou;
+        }
+    }
+
+    impl std::ops::MulAssign<u64> for Grou {
+        fn mul_assign(&mut self, rhs:u64) {
+            self.multiply_small(rhs);
+        }
+    }
 
     impl Grou {
         // Performs the multiplication of a GrouSubset and an u64, and adds the
