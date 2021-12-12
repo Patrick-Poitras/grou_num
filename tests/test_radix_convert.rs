@@ -52,5 +52,27 @@ pub mod test_radix_convert {
         for (&input, output) in base10_str_inputs.iter().zip(grou_num_outputs) {
             assert_eq!(Grou::from(input), output);
         }
+
+        let base16_str_inputs : [&str; 6] = [
+            "0xffffffffffffffffffffffffffffffff",
+            "0x0123456789012345678901234567890",
+            "0x314159265358979323846fffffffffff",
+            "0x0000000000000000000000000000000000000000000000000000f",
+            "0",
+            "",
+        ];
+
+        let grou_num_outputs:  [Grou; 6] = [
+            Grou::from(vec![18446744073709551615,18446744073709551615]),
+            Grou::from(vec![6230888492328974480, 5124095575331380]),
+            Grou::from(vec![2559293633555595263, 3549216002486605715]),
+            Grou::from(vec![15]),
+            Grou::from(vec![0]),
+            Grou::from(vec![]),
+        ];
+
+        for (&input, output) in base16_str_inputs.iter().zip(grou_num_outputs) {
+            assert_eq!(Grou::from(input), output);
+        }
     }
 }
