@@ -60,7 +60,7 @@ fn grou_fibonacci_5000(c: &mut Criterion) {
 
 fn grou_fibonacci_100k(c: &mut Criterion) {
     c.bench_function("fibonacci-100k", |b| {
-        b.iter(|| grou_fibonacci(1_00_000));
+        b.iter(|| grou_fibonacci(100_000));
     });
 }
 
@@ -114,7 +114,7 @@ fn sub_len_50(c : &mut Criterion) {
 }
 
 fn sub_len_500(c : &mut Criterion) {
-    let (v, w) = generate_grou_pair(50);
+    let (v, w) = generate_grou_pair(500);
     c.bench_function("sub-len-500", |b| {
         b.iter(|| &w - &v);
     });
