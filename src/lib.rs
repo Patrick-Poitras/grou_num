@@ -487,7 +487,7 @@ pub mod grou {
     impl std::ops::Mul<&GrouSubset<'_>> for &GrouSubset<'_> {
         type Output = Grou;
         fn mul<'a>(self, rhs: &GrouSubset<'a>) -> Grou {
-            self.multiply_straight(&rhs)
+            self.multiply_straight(rhs)
         }
     }
 
