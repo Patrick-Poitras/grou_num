@@ -285,7 +285,7 @@ pub mod grou {
     macro_rules! impl_sub_with_sign {
         ($lhs:ty, $rhs:ty) => {
             impl $lhs {
-                fn sub_with_sign(&self, other: $rhs) -> (bool, Grou) {
+                pub fn sub_with_sign(&self, other: $rhs) -> (bool, Grou) {
                     match self.partial_cmp(other).unwrap() {
                         std::cmp::Ordering::Less => return (true, other.sub_unchecked(self)),
                         std::cmp::Ordering::Equal => return (false, Grou::from(0)),

@@ -47,19 +47,19 @@ pub fn convert_from_string(s :&str) -> Grou {
 
 pub fn convert_hexadecimal_string_to_grou(s: &str) -> Grou {
     let (_, s) = s.split_at(2);
-    let base_B_num = string_into_base(s, 15, 16);
-    return convert_to_binary(&base_B_num[..], BASE_HEXADECIMAL);
+    let large_base_num = string_into_base(s, 15, 16);
+    return convert_to_binary(&large_base_num[..], BASE_HEXADECIMAL);
 }
 
 pub fn convert_binary_string_to_grou(s: &str) -> Grou {
     let (_, s) = s.split_at(2);
-    let base_B_num = string_into_base(s, 64, 2);
-    return convert_to_binary(&base_B_num[..], BASE_BINARY);
+    let large_base_num = string_into_base(s, 64, 2);
+    return convert_to_binary(&large_base_num[..], BASE_BINARY);
 }
 
 pub fn convert_decimal_string_to_grou(s : &str) -> Grou {
-    let base_B_num = string_into_base(s, 19, 10);
-    return convert_to_binary(&base_B_num[..], BASE_DECIMAL);
+    let large_base_num = string_into_base(s, 19, 10);
+    return convert_to_binary(&large_base_num[..], BASE_DECIMAL);
 }
 
 ///Sorts into packets of a given number of 
@@ -91,7 +91,7 @@ fn string_into_base(s: &str, packet_length:usize, base: u32) -> Vec<u64> {
 }
 
 pub fn convert_digits_to_binary(base10_digits: &[u8]) -> Grou {
-    let mut base_B_num = Vec::<u64>::new();
+    let mut large_base_num = Vec::<u64>::new();
     let mut accumulate: u64 = 0;
     let mut multiple: u64 = 1;
     // Reverse to convert to little endian.
@@ -101,16 +101,16 @@ pub fn convert_digits_to_binary(base10_digits: &[u8]) -> Grou {
 
         if multiple == BASE_DECIMAL {
             multiple = 1;
-            base_B_num.push(accumulate);
+            large_base_num.push(accumulate);
             accumulate = 0;
         }
     }
     //Get remaining accumulated bits.
-    if accumulate > 0 || (base_B_num.is_empty() && base10_digits.len() > 0) {
-        base_B_num.push(accumulate);    
+    if accumulate > 0 || (large_base_num.is_empty() && base10_digits.len() > 0) {
+        large_base_num.push(accumulate);    
     }
 
-    return convert_to_binary(&base_B_num[..], BASE_DECIMAL);
+    return convert_to_binary(&large_base_num[..], BASE_DECIMAL);
 }
 
 pub fn convert_to_binary(num_in_base: &[u64], base :u64) -> Grou {
