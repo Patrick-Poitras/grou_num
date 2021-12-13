@@ -41,7 +41,7 @@ pub mod grou {
     /// 
     /// To get an explicit conversion, you can use the functions
     /// Grou::from_dec(), Grou::from_hex(), and Grou::from_bin().
-    //impl From<&str> for Grou;
+    //  impl From<&str> for Grou;
 
     macro_rules! impl_partial_cmp {
         ($type1: ty) => {

@@ -7,7 +7,12 @@ const BASE_BINARY : u64 = 1 << 63;
 const BASE_DECIMAL: u64 = 10_000_000_000_000_000_000u64;
 const BASE_HEXADECIMAL: u64 = 0x1000_0000_0000_0000;
 
-/// Accepts an ascii string slice and returns a Grou.
+/// The radix to Grou conversion takes in an ascii string slice,
+/// and converts it to a Grou unsigned integer. This conversion
+/// is dependant on the prefix of the string, where:
+/// 0x: indicates hexadecimal
+/// 0b: indicates binary
+/// (nothing) : indicates decimal
 impl std::convert::From<&str> for Grou {
     fn from(s : &str) -> Grou {
         if !s.is_ascii() {
@@ -17,27 +22,38 @@ impl std::convert::From<&str> for Grou {
     }
 }
 
-/// Accepts an ascii string and returns a Grou.
+/// The radix to Grou conversion takes in an ascii string, and
+/// converts it to a Grou unsigned integer. This conversion
+/// is dependant on the prefix of the string, where:
+/// 0x: indicates hexadecimal
+/// 0b: indicates binary
+/// (nothing) : indicates decimal
 impl std::convert::From<String> for Grou {
     fn from(s : String) -> Grou {
+        //Ascii checking is already in the called function.
         return Grou::from(&s[..]);
     }
 }
 
 /// The function to which the from implementation delegates.
 /// It calls convert_to_(format)_string_to_Grou(s), with
-/// the format being determined by the prefix of the string, where:
-/// 0b : binary
-/// 0x : hexadecimal
-/// _ : decimal
+/// the format being determined by the prefix of the string,
+/// where:
+/// 0x: indicates hexadecimal
+/// 0b: indicates binary
+/// (nothing) : indicates decimal
 pub fn convert_from_string(s :&str) -> Grou {
     if s.is_empty() {
         return Grou::empty(0);
     }
     if s.chars().nth(0).unwrap() == '0' {
         match s.chars().nth(1) {
-            Some('x') => {return convert_hexadecimal_string_to_grou(s);},
-            Some('b') => {return convert_binary_string_to_grou(s);},
+            Some('x') => {
+                let (_, s) = s.split_at(2);
+                return convert_hexadecimal_string_to_grou(s);},
+            Some('b') => {
+                let (_, s) = s.split_at(2);
+                return convert_binary_string_to_grou(s);},
             _ => (),
         }
     }
@@ -46,13 +62,11 @@ pub fn convert_from_string(s :&str) -> Grou {
 }
 
 pub fn convert_hexadecimal_string_to_grou(s: &str) -> Grou {
-    let (_, s) = s.split_at(2);
     let large_base_num = string_into_base(s, 15, 16);
     return convert_to_binary(&large_base_num[..], BASE_HEXADECIMAL);
 }
 
 pub fn convert_binary_string_to_grou(s: &str) -> Grou {
-    let (_, s) = s.split_at(2);
     let large_base_num = string_into_base(s, 64, 2);
     return convert_to_binary(&large_base_num[..], BASE_BINARY);
 }
