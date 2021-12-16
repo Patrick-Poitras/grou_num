@@ -32,17 +32,6 @@ pub mod grou {
         }
     }
 
-    /// The radix to Grou conversion takes in a string, and
-    /// converts it to a Grou unsigned integer. This conversion
-    /// is dependant on the prefix of the string, where:
-    /// 0x: indicates hexadecimal
-    /// 0b: indicates binary
-    ///   : indicates decimal
-    /// 
-    /// To get an explicit conversion, you can use the functions
-    /// Grou::from_dec(), Grou::from_hex(), and Grou::from_bin().
-    //  impl From<&str> for Grou;
-
     macro_rules! impl_partial_cmp {
         ($type1: ty) => {
             impl std::cmp::PartialOrd for $type1 {
@@ -312,7 +301,7 @@ pub mod grou {
             }
         }
 
-        pub fn split_off_block<'a>(self: &'a Self, length: usize, start: usize) -> GrouSubset<'a> {
+        pub fn split_off_block<'a>(self: &'a Self, start: usize, length: usize) -> GrouSubset<'a> {
             if self.data.len() <= start {
                 return GrouSubset {
                     data: &self.data[0..0],
@@ -497,10 +486,10 @@ pub mod grou {
             // Step 1: Split into GrouSubsets
             let block_length = std::cmp::max(self.data.len(), rhs.data.len());
             let block_length = block_length / 2 + block_length % 2;
-            let a0 = self.split_off_block(block_length, 0);
-            let a1 = self.split_off_block(block_length, a0.data.len());
-            let b0 = rhs.split_off_block(block_length, 0);
-            let b1 = rhs.split_off_block(block_length, b0.data.len());
+            let a0 = self.split_off_block(0, block_length);
+            let a1 = self.split_off_block(a0.data.len(), block_length);
+            let b0 = rhs.split_off_block(0, block_length);
+            let b1 = rhs.split_off_block(b0.data.len(), block_length);
 
             // Make temporary values.
             let high = &b1 * &a1;
