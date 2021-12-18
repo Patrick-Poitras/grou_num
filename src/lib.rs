@@ -2,8 +2,11 @@
 #![feature(destructuring_assignment)]
 
 pub mod radix_convert;
+mod block_iterator;
 
 pub mod grou {
+    use crate::block_iterator::*;
+
     #[derive(Clone, PartialEq, Eq, Debug)]
     pub struct Grou {
         data: Vec<u64>,
@@ -15,6 +18,37 @@ pub mod grou {
             Grou {
                 data: Vec::with_capacity(size),
             }
+        }
+
+        ///Returns the number of blocks in the Grou.
+        #[inline(always)]
+        pub fn len(&self) -> usize {
+            self.data.len()
+        }
+
+        ///Returns whether the underlying structure is empty.
+        ///This is not equivalent to self == 0;
+        #[inline(always)]
+        pub fn is_empty(&self) -> bool {
+            self.data.is_empty()
+        }
+
+        /// Removes trailing 0s.
+        #[inline]
+        fn trim(self: &mut Self) {
+            let mut final_length = self.len();
+            for val in self.data.iter().rev() {
+                if *val == 0u64 {
+                    final_length -= 1;
+                } else {
+                    break;
+                }
+            }
+            if final_length == 0 {
+                // Leave one 0;
+                final_length = 1;
+            }
+            self.data.truncate(final_length);
         }
     }
 
@@ -36,10 +70,10 @@ pub mod grou {
         ($type1: ty) => {
             impl std::cmp::PartialOrd for $type1 {
                 fn partial_cmp(self: &Self, other: &Self) -> Option<std::cmp::Ordering> {
-                    let mut self_len = self.data.len();
+                    let mut self_len = self.len();
                     let mut iter_self = self.data.iter().rev().peekable();
 
-                    let mut other_len = other.data.len();
+                    let mut other_len = other.len();
                     let mut iter_other = other.data.iter().rev().peekable();
 
                     while iter_self.next_if_eq(&&0u64).is_some() {
@@ -70,27 +104,8 @@ pub mod grou {
     impl_partial_cmp!(GrouSubset<'_>);
 
     impl Grou {
-        #[inline]
-        fn trim(self: &mut Self) {
-            let mut final_length = self.data.len();
-            for val in self.data.iter().rev() {
-                if *val == 0u64 {
-                    final_length -= 1;
-                } else {
-                    break;
-                }
-            }
-            if final_length == 0 {
-                // Leave one 0;
-                final_length = 1;
-            }
-            self.data.truncate(final_length);
-        }
-    }
-
-    impl Grou {
         pub fn addition_small(&mut self, rhs:u64) {
-            if self.data.len() == 0 {
+            if self.len() == 0 {
                 self.data.push(rhs);
                 return;
             }
@@ -137,7 +152,7 @@ pub mod grou {
             let mut largest;
             let smallest;
 
-            if ($lhs.data.len() > $rhs.data.len()) {
+            if ($lhs.len() > $rhs.len()) {
                 largest = $lhs.data.iter();
                 smallest = $rhs.data.iter();
             } else {
@@ -177,7 +192,7 @@ pub mod grou {
                 type Output = Grou;
 
                 fn add(self: Self, other: $type2) -> Grou {
-                    let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+                    let preallocation_size = std::cmp::max(self.len(), other.len()) + 1;
                     let mut result = Grou::empty(preallocation_size);
                     iter_addition!(self, other, result.data);
                     return result;
@@ -195,7 +210,7 @@ pub mod grou {
         ($type2:ty) => {
             impl std::ops::AddAssign<$type2> for Grou {
                 fn add_assign(self: &mut Grou, other: $type2) {
-                    let preallocation_size = std::cmp::max(self.data.len(), other.data.len()) + 1;
+                    let preallocation_size = std::cmp::max(self.len(), other.len()) + 1;
                     let mut final_vec: Vec<u64> = Vec::with_capacity(preallocation_size);
                     iter_addition!(self, other, final_vec);
                     self.data = final_vec;
@@ -245,6 +260,8 @@ pub mod grou {
     impl_sub_unchecked!(Grou, Grou);
     impl_sub_unchecked!(GrouSubset<'_>, GrouSubset<'_>);
 
+    //impl_sub_unchecked!(Grou, GrouSubset<'_>);
+
     macro_rules! impl_sub {
         ($lhs: ty, $rhs: ty) => {
             impl std::ops::Sub<$rhs> for $lhs {
@@ -270,6 +287,8 @@ pub mod grou {
     impl_sub!(Grou, &Grou);
     impl_sub!(&Grou, Grou);
     impl_sub!(&Grou, &Grou);
+
+    impl_sub!(GrouSubset<'_>, GrouSubset<'_>);
 
     macro_rules! impl_sub_with_sign {
         ($lhs:ty, $rhs:ty) => {
@@ -302,11 +321,11 @@ pub mod grou {
         }
 
         pub fn split_off_block<'a>(self: &'a Self, start: usize, length: usize) -> GrouSubset<'a> {
-            if self.data.len() <= start {
+            if self.len() <= start {
                 return GrouSubset {
                     data: &self.data[0..0],
                 };
-            } else if self.data.len() - start < length {
+            } else if self.len() - start < length {
                 return GrouSubset {
                     data: &self.data[start..],
                 };
@@ -340,11 +359,11 @@ pub mod grou {
         // Splits the number into N chunks. Thanks to "The Lua Moon" on Discord
         // for the suggestion.
         fn make_chunks<'a>(self: &'a Self, n: usize) -> std::slice::Chunks<'a, u64> {
-            let offset = match self.data.len() % n {
+            let offset = match self.len() % n {
                 0 => 0,
                 _ => 1,
             };
-            let chunk_length = self.data.len() / n + offset;
+            let chunk_length = self.len() / n + offset;
             return self.data[..].chunks(chunk_length);
         }
     }
@@ -352,6 +371,12 @@ pub mod grou {
     #[derive(Clone, Debug, PartialEq)]
     pub struct GrouSubset<'a> {
         pub data: &'a [u64],
+    }
+
+    impl<'a> GrouSubset<'a> {
+        pub fn len(&self) -> usize {
+            self.data.len()
+        }
     }
 
     macro_rules! impl_addition_grousubset {
@@ -381,6 +406,7 @@ pub mod grou {
     impl_addition_grousubset!(Grou, &GrouSubset<'_>);
     impl_addition_grousubset!(&Grou, GrouSubset<'_>);
     impl_addition_grousubset!(&Grou, &GrouSubset<'_>);
+
 
     impl Grou {
         // Underlying function for Mul<u64> and MulAssign<u64>
@@ -422,7 +448,7 @@ pub mod grou {
             for (ind, val) in lhs.data.iter().enumerate() {
                 let effective_ind = offset + ind;
                 // Add another box if lhs.data > self.data
-                while self.data.len() <= effective_ind {
+                while self.len() <= effective_ind {
                     self.data.push(0);
                 }
                 let (value, tmp_carry) = val.carrying_mul(rhs, carry);
@@ -439,9 +465,9 @@ pub mod grou {
                 }
             }
 
-            let mut current_index = lhs.data.len();
+            let mut current_index = lhs.len();
             while carry > 0 || megacarry {
-                if self.data.len() == current_index {
+                if self.len() == current_index {
                     self.data.push(0);
                 }
 
@@ -455,7 +481,7 @@ pub mod grou {
 
         #[inline]
         pub fn move_vec_elements_right(&mut self, shift: usize) {
-            self.data.resize(self.data.len() + shift, 0);
+            self.data.resize(self.len() + shift, 0);
             self.data.rotate_right(shift);
         }
     }
@@ -464,7 +490,7 @@ pub mod grou {
         // Straight multiplication of two grou subsets of length
         // A and B respectively will have A*B operations.
         fn multiply_straight<'a>(&self, rhs: &GrouSubset<'a>) -> Grou {
-            let mut ret_grou = Grou::empty(self.data.len() + rhs.data.len());
+            let mut ret_grou = Grou::empty(self.len() + rhs.len());
             for (ind, rhs_value) in rhs.data.iter().enumerate() {
                 ret_grou.add_multiply_result(self, *rhs_value, ind);
             }
@@ -480,16 +506,31 @@ pub mod grou {
         }
     }
 
+    macro_rules! impl_mul {
+        ($lhs:ty, $rhs:ty) => {
+            impl std::ops::Mul<$rhs> for $lhs {
+                type Output = Grou;
+                fn mul(self, rhs: $rhs) -> Grou {
+                    self.karatsuba_mul(&rhs)
+                }
+            }
+        };
+    }
+
+    impl_mul!(Grou, Grou);
+    impl_mul!(Grou, &Grou);
+    impl_mul!(&Grou, Grou);
+    impl_mul!(&Grou, &Grou);
+
     // Implementing Karatsuba.
     impl Grou {
         pub fn karatsuba_mul(&self, rhs: &Grou) -> Grou {
             // Step 1: Split into GrouSubsets
-            let block_length = std::cmp::max(self.data.len(), rhs.data.len());
-            let block_length = block_length / 2 + block_length % 2;
+            let block_length = calculate_block_length(2, self, rhs);
             let a0 = self.split_off_block(0, block_length);
-            let a1 = self.split_off_block(a0.data.len(), block_length);
+            let a1 = self.split_off_block(a0.len(), block_length);
             let b0 = rhs.split_off_block(0, block_length);
-            let b1 = rhs.split_off_block(b0.data.len(), block_length);
+            let b1 = rhs.split_off_block(b0.len(), block_length);
 
             // Make temporary values.
             let high = &b1 * &a1;
@@ -516,5 +557,27 @@ pub mod grou {
                 return (t0 + t1) - t2;
             }
         }
+
+        /*
+        pub fn toom_3_multiplication<'a, 'b>(&'a self, rhs: &'b Grou) -> Grou {
+            let block_length = calculate_block_length(3, self, rhs);
+            let iter_self = BlockIterator::<'a>::new(self, block_length);
+            let iter_rhs = BlockIterator::<'b>::new(rhs, block_length);
+
+            let (a0,a1,a2) = (iter_self.unwrap_next(), iter_self.unwrap_next(), iter_self.unwrap_next());
+            let (b0,b1,b2) = (iter_rhs.unwrap_next(), iter_rhs.unwrap_next(), iter_rhs.unwrap_next());
+            debug_assert!(iter_self.len() == 0 && iter_rhs.len() == 0);
+
+            let w0 = &a0 * &b0;
+            let w4 = &a2 * &b2;
+
+            let t1 = (&a2 + &a1 + &a0) * (&b2 + &b1 + &b0);
+
+            let tm1_a = (&a2 + &a0) - &a1;
+            let tm1_b = (&b2 + &b0) - &b1;
+            let tm1 =  tm1_a * tm1_b;
+
+        }
+        */
     }
 }
